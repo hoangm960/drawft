@@ -1,46 +1,78 @@
-import { useRef, useEffect } from "react"
+import { useState, useRef, useEffect } from "react"
 
 export default function Canvas() {
     const canvasRef = useRef(null)
+    const [offset, setOffset] = useState({ x: 0, y: 0 })
+    const [isDragging, setIsDragging] = useState(false)
+    const [lastPos, setLastPos] = useState({ x: 0, y: 0 })
+    const [scale, setScale] = useState(1)
 
     useEffect(() => {
         const canvas = canvasRef.current
+        canvas.width = window.innerWidth
+        canvas.height = window.innerHeight
+        draw(canvas)
+    }, [offset, scale])
+
+    const draw = canvas => {
         const ctx = canvas.getContext("2d")
 
-        if (canvas) {
-            canvas.width = window.innerWidth
-            canvas.height = window.innerHeight
+        ctx.setTransform(scale, 0, 0, scale, offset.x, offset.y)
+        ctx.clearRect(
+            -offset.x / scale,
+            -offset.y / scale,
+            canvas.width / scale,
+            canvas.height / scale
+        )
 
-            const handleResize = () => {
-                canvas.width = window.innerWidth
-                canvas.height = window.innerHeight
+        for (let x = -1000; x <= 1000; x += 300) {
+            for (let y = -1000; y <= 1000; y += 300) {
+                ctx.beginPath()
+                ctx.arc(x, y, 80, 0, 2 * Math.PI)
+                ctx.fillStyle = "orange"
+                ctx.fill()
             }
-            window.addEventListener("resize", handleResize)
         }
+    }
 
-        const svgString = `
-          <svg width="200" height="200" xmlns="http://www.w3.org/2000/svg">
-            <circle cx="100" cy="100" r="80" fill="orange" stroke="black" stroke-width="5"/>
-          </svg>
-        `
-        const svgBlob = new Blob([svgString], {
-            type: "image/svg+xml;charset=utf-8",
-        })
-        const url = URL.createObjectURL(svgBlob)
+    const handleMouseDown = e => {
+        setIsDragging(true)
+        setLastPos({ x: e.clientX, y: e.clientY })
+    }
 
-        const img = new Image()
-        img.onload = () => {
-            ctx.drawImage(img, 0, 0)
-            URL.revokeObjectURL(url)
-        }
-        img.src = url
-    }, [])
+    const handleMouseMove = e => {
+        if (!isDragging) return
 
+        const dx = e.clientX - lastPos.x
+        const dy = e.clientY - lastPos.y
+
+        setOffset(prev => ({ x: prev.x + dx, y: prev.y + dy }))
+        setLastPos({ x: e.clientX, y: e.clientY })
+    }
+
+    const handleMouseUp = () => setIsDragging(false)
+
+    const handleWheel = e => {
+        const zoomCoef = 0.001
+        const zoomRange = [0.1, 5]
+
+        const zoomAmount = -e.deltaY * zoomCoef
+        const newScale = Math.min(
+            Math.max(zoomRange[0], scale + zoomAmount),
+            zoomRange[1]
+        )
+        setScale(newScale)
+    }
     return (
         <canvas
             id="whiteboard"
-            className="bg-gray-950"
+            className="w-dvw h-dvh bg-gray-950"
             ref={canvasRef}
+            onMouseDown={handleMouseDown}
+            onMouseMove={handleMouseMove}
+            onMouseUp={handleMouseUp}
+            onMouseLeave={handleMouseUp}
+            onWheel={handleWheel}
         ></canvas>
     )
 }
