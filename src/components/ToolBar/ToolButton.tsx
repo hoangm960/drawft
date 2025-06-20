@@ -1,7 +1,7 @@
 interface ToolButtonProps {
-    icon: String
-    onClick: void
-    tooltip?: String
+    icon: String;
+    onClick: void;
+    tooltip?: String;
 }
 
 export default function ToolButton({
@@ -17,5 +17,5 @@ export default function ToolButton({
         >
             <img src={icon} alt={tooltip} className="max-w-full max-h-full" />
         </div>
-    )
+    );
 }

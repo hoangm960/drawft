@@ -1,19 +1,15 @@
-import ToolButton from "./ToolButton.tsx"
-import LineIcon from "@assets/line.svg"
-import RectangleIcon from "@assets/rectangle.svg"
-import EllipseIcon from "@assets/ellipse.svg"
-import DiamondIcon from "@assets/diamond.svg"
-import Triangle from "@assets/triangle.svg"
-import ArrowIcon from "@assets/arrow.svg"
-import { useState, useEffect } from "react"
-import { Tools, useTool } from "@/store.ts"
+import ToolButton from "./ToolButton.tsx";
+import LineIcon from "@assets/line.svg";
+import RectangleIcon from "@assets/rectangle.svg";
+import EllipseIcon from "@assets/ellipse.svg";
+import DiamondIcon from "@assets/diamond.svg";
+import Triangle from "@assets/triangle.svg";
+import ArrowIcon from "@assets/arrow.svg";
+import { useState, useEffect } from "react";
+import { Tools, useTool } from "@/store.ts";
 
 export default function ToolBar() {
-    const { tool, setTool } = useTool()
-
-    useEffect(() => {
-        console.log(tool)
-    }, [tool])
+    const { tool, setTool } = useTool();
 
     return (
         <div className="absolute bottom-0 w-full h-fit pb-4 flex items-center justify-center">
@@ -21,39 +17,39 @@ export default function ToolBar() {
                 <ToolButton
                     icon={RectangleIcon}
                     onClick={() => {
-                        setTool(Tools.rec)
+                        setTool(Tools.rec);
                     }}
                     tooltip="Rectangle"
                 ></ToolButton>
                 <ToolButton
                     icon={DiamondIcon}
                     onClick={() => {
-                        setTool(Tools.dia)
+                        setTool(Tools.dia);
                     }}
                     tooltip="Diamond"
                 ></ToolButton>
                 <ToolButton
                     icon={EllipseIcon}
                     onClick={() => {
-                        setTool(Tools.ellipse)
+                        setTool(Tools.ellipse);
                     }}
                     tooltip="Ellipse"
                 ></ToolButton>
                 <ToolButton
                     icon={ArrowIcon}
                     onClick={() => {
-                        setTool(Tools.arrow)
+                        setTool(Tools.arrow);
                     }}
                     tooltip="Arrow"
                 ></ToolButton>
                 <ToolButton
                     icon={LineIcon}
                     onClick={() => {
-                        setTool(Tools.line)
+                        setTool(Tools.line);
                     }}
                     tooltip="Line"
                 ></ToolButton>
             </div>
         </div>
-    )
+    );
 }

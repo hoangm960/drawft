@@ -1,6 +1,6 @@
-import { useState } from "react"
-import Canvas from "@components/Canvas/Canvas.tsx"
-import ToolBar from "@components/ToolBar/ToolBar.tsx"
+import { useState } from "react";
+import Canvas from "@components/Canvas/Canvas.tsx";
+import ToolBar from "@components/ToolBar/ToolBar.tsx";
 
 function App() {
     return (
@@ -8,7 +8,7 @@ function App() {
             <Canvas></Canvas>
             <ToolBar></ToolBar>
         </div>
-    )
+    );
 }
 
-export default App
+export default App;

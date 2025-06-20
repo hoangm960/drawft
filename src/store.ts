@@ -1,4 +1,4 @@
-import { create } from "zustand"
+import { create } from "zustand";
 
 export enum Tools {
     rec,
@@ -11,4 +11,4 @@ export enum Tools {
 export const useTool = create(set => ({
     tool: Tools.rec,
     setTool: value => set(state => ({ ...state, tool: value })),
-}))
+}));
