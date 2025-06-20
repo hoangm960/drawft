@@ -1,6 +1,6 @@
 import { useState } from "react"
-import Canvas from "./components/Canvas/Canvas.jsx"
-import ToolBar from "./components/ToolBar/ToolBar.jsx"
+import Canvas from "@components/Canvas/Canvas.tsx"
+import ToolBar from "@components/ToolBar/ToolBar.tsx"
 
 function App() {
     return (

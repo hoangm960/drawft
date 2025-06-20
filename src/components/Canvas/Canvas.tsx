@@ -24,15 +24,6 @@ export default function Canvas() {
             canvas.width / scale,
             canvas.height / scale
         )
-
-        for (let x = -1000; x <= 1000; x += 300) {
-            for (let y = -1000; y <= 1000; y += 300) {
-                ctx.beginPath()
-                ctx.arc(x, y, 80, 0, 2 * Math.PI)
-                ctx.fillStyle = "orange"
-                ctx.fill()
-            }
-        }
     }
 
     const handleMouseDown = e => {
