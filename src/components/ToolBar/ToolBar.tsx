@@ -5,6 +5,7 @@ import EllipseIcon from "@assets/ellipse.svg";
 import DiamondIcon from "@assets/diamond.svg";
 import Triangle from "@assets/triangle.svg";
 import ArrowIcon from "@assets/arrow.svg";
+import PanIcon from "@assets/pan.svg";
 import { useState, useEffect } from "react";
 import { Tools, useTool } from "@/store.ts";
 
@@ -15,9 +16,16 @@ export default function ToolBar() {
         <div className="absolute bottom-0 w-full h-fit pb-4 flex items-center justify-center">
             <div className="bg-gray-600/30 h-20 w-fit flex flex-row gap-2 px-8 py-4 rounded-2xl">
                 <ToolButton
+                    icon={PanIcon}
+                    onClick={() => {
+                        setTool(Tools.pan);
+                    }}
+                    tooltip="Pan"
+                ></ToolButton>
+                <ToolButton
                     icon={RectangleIcon}
                     onClick={() => {
-                        setTool(Tools.rec);
+                        setTool(Tools.rect);
                     }}
                     tooltip="Rectangle"
                 ></ToolButton>
