@@ -26,6 +26,66 @@ export default function Canvas() {
         y: (y - offset.y) / scale,
     });
 
+    const drawRectangle = (ctx, from, to) => {
+        ctx.rect(
+            Math.min(from.x, to.x),
+            Math.min(from.y, to.y),
+            Math.abs(to.x - from.x),
+            Math.abs(to.y - from.y)
+        );
+    };
+
+    const drawDiamond = (ctx, from, to) => {
+        const minX = Math.min(from.x, to.x);
+        const maxX = Math.max(from.x, to.x);
+        const minY = Math.min(from.y, to.y);
+        const maxY = Math.max(from.y, to.y);
+        const midX = (minX + maxX) / 2;
+        const midY = (minY + maxY) / 2;
+
+        ctx.moveTo(midX, minY);
+        ctx.lineTo(maxX, midY);
+        ctx.lineTo(midX, maxY);
+        ctx.lineTo(minX, midY);
+        ctx.closePath();
+    };
+
+    const drawEllipse = (ctx, from, to) => {
+        ctx.ellipse(
+            (from.x + to.x) / 2,
+            (from.y + to.y) / 2,
+            Math.abs(to.x - from.x) / 2,
+            Math.abs(to.y - from.y) / 2,
+            0,
+            0,
+            2 * Math.PI
+        );
+    };
+
+    const drawArrow = (ctx, from, to) => {
+        const headlen = 10 / scale;
+        const dx = to.x - from.x;
+        const dy = to.y - from.y;
+        const angle = Math.atan2(dy, dx);
+
+        ctx.moveTo(from.x, from.y);
+        ctx.lineTo(to.x, to.y);
+        ctx.lineTo(
+            to.x - headlen * Math.cos(angle - Math.PI / 6),
+            to.y - headlen * Math.sin(angle - Math.PI / 6)
+        );
+        ctx.moveTo(to.x, to.y);
+        ctx.lineTo(
+            to.x - headlen * Math.cos(angle + Math.PI / 6),
+            to.y - headlen * Math.sin(angle + Math.PI / 6)
+        );
+    };
+
+    const drawLine = (ctx, from, to) => {
+        ctx.moveTo(from.x, from.y);
+        ctx.lineTo(to.x, to.y);
+    };
+
     const draw = () => {
         const canvas = canvasRef.current;
         const ctx = canvas.getContext("2d");
@@ -44,41 +104,19 @@ export default function Canvas() {
             ctx.beginPath();
             switch (type) {
                 case Tools.rect:
-                    ctx.rect(
-                        Math.min(from.x, to.x),
-                        Math.min(from.y, to.y),
-                        Math.abs(to.x - from.x),
-                        Math.abs(to.y - from.y)
-                    );
+                    drawRectangle(ctx, from, to);
                     break;
                 case Tools.dia:
-                    const minX = Math.min(from.x, to.x);
-                    const maxX = Math.max(from.x, to.x);
-                    const minY = Math.min(from.y, to.y);
-                    const maxY = Math.max(from.y, to.y);
-                    const midX = (minX + maxX) / 2;
-                    const midY = (minY + maxY) / 2;
-
-                    ctx.moveTo(midX, minY);
-                    ctx.lineTo(maxX, midY);
-                    ctx.lineTo(midX, maxY);
-                    ctx.lineTo(minX, midY);
-                    ctx.closePath();
+                    drawDiamond(ctx, from, to);
                     break;
                 case Tools.ellipse:
-                    ctx.ellipse(
-                        (from.x + to.x) / 2,
-                        (from.y + to.y) / 2,
-                        Math.abs(to.x - from.x) / 2,
-                        Math.abs(to.y - from.y) / 2,
-                        0,
-                        0,
-                        2 * Math.PI
-                    );
+                    drawEllipse(ctx, from, to);
+                    break;
+                case Tools.arrow:
+                    drawArrow(ctx, from, to);
                     break;
                 case Tools.line:
-                    ctx.moveTo(from.x, from.y);
-                    ctx.lineTo(to.x, to.y);
+                    drawLine(ctx, from, to);
                     break;
             }
             ctx.strokeStyle = shape === currentShape ? "red" : "blue";
@@ -142,7 +180,7 @@ export default function Canvas() {
     return (
         <canvas
             id="whiteboard"
-            className="w-dvw h-dvh bg-gray-950"
+            className={`w-dvw h-dvh bg-gray-950 ${tool == Tools.pan ? "cursor-grab" : "cursor-crosshair"}`}
             ref={canvasRef}
             onMouseDown={handleMouseDown}
             onMouseMove={handleMouseMove}

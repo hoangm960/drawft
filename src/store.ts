@@ -2,7 +2,7 @@ import { create } from "zustand";
 
 export enum Tools {
     pan,
-    rec,
+    rect,
     dia,
     ellipse,
     arrow,
