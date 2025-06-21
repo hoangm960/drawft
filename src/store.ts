@@ -2,6 +2,7 @@ import { create } from "zustand";
 
 export enum Tools {
     pan,
+    select,
     rect,
     dia,
     ellipse,
@@ -10,6 +11,6 @@ export enum Tools {
 }
 
 export const useTool = create(set => ({
-    tool: Tools.pan,
+    tool: Tools.select,
     setTool: value => set(state => ({ ...state, tool: value })),
 }));

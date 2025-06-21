@@ -6,6 +6,7 @@ import DiamondIcon from "@assets/diamond.svg";
 import Triangle from "@assets/triangle.svg";
 import ArrowIcon from "@assets/arrow.svg";
 import PanIcon from "@assets/pan.svg";
+import CursorIcon from "@assets/cursor.svg";
 import { useState, useEffect } from "react";
 import { Tools, useTool } from "@/store.ts";
 
@@ -21,6 +22,13 @@ export default function ToolBar() {
                         setTool(Tools.pan);
                     }}
                     tooltip="Pan"
+                ></ToolButton>
+                <ToolButton
+                    icon={CursorIcon}
+                    onClick={() => {
+                        setTool(Tools.select);
+                    }}
+                    tooltip="Select"
                 ></ToolButton>
                 <ToolButton
                     icon={RectangleIcon}

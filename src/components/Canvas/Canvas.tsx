@@ -26,8 +26,8 @@ export default function Canvas() {
         y: (y - offset.y) / scale,
     });
 
-    const drawRectangle = (ctx, from, to) => {
-        ctx.rect(
+    const drawRectangle = (path, from, to) => {
+        path.rect(
             Math.min(from.x, to.x),
             Math.min(from.y, to.y),
             Math.abs(to.x - from.x),
@@ -35,7 +35,7 @@ export default function Canvas() {
         );
     };
 
-    const drawDiamond = (ctx, from, to) => {
+    const drawDiamond = (path, from, to) => {
         const minX = Math.min(from.x, to.x);
         const maxX = Math.max(from.x, to.x);
         const minY = Math.min(from.y, to.y);
@@ -43,15 +43,15 @@ export default function Canvas() {
         const midX = (minX + maxX) / 2;
         const midY = (minY + maxY) / 2;
 
-        ctx.moveTo(midX, minY);
-        ctx.lineTo(maxX, midY);
-        ctx.lineTo(midX, maxY);
-        ctx.lineTo(minX, midY);
-        ctx.closePath();
+        path.moveTo(midX, minY);
+        path.lineTo(maxX, midY);
+        path.lineTo(midX, maxY);
+        path.lineTo(minX, midY);
+        path.closePath();
     };
 
-    const drawEllipse = (ctx, from, to) => {
-        ctx.ellipse(
+    const drawEllipse = (path, from, to) => {
+        path.ellipse(
             (from.x + to.x) / 2,
             (from.y + to.y) / 2,
             Math.abs(to.x - from.x) / 2,
@@ -62,28 +62,51 @@ export default function Canvas() {
         );
     };
 
-    const drawArrow = (ctx, from, to) => {
+    const drawArrow = (path, from, to) => {
         const headlen = 10 / scale;
         const dx = to.x - from.x;
         const dy = to.y - from.y;
         const angle = Math.atan2(dy, dx);
 
-        ctx.moveTo(from.x, from.y);
-        ctx.lineTo(to.x, to.y);
-        ctx.lineTo(
+        path.moveTo(from.x, from.y);
+        path.lineTo(to.x, to.y);
+        path.lineTo(
             to.x - headlen * Math.cos(angle - Math.PI / 6),
             to.y - headlen * Math.sin(angle - Math.PI / 6)
         );
-        ctx.moveTo(to.x, to.y);
-        ctx.lineTo(
+        path.moveTo(to.x, to.y);
+        path.lineTo(
             to.x - headlen * Math.cos(angle + Math.PI / 6),
             to.y - headlen * Math.sin(angle + Math.PI / 6)
         );
     };
 
-    const drawLine = (ctx, from, to) => {
-        ctx.moveTo(from.x, from.y);
-        ctx.lineTo(to.x, to.y);
+    const drawLine = (path, from, to) => {
+        path.moveTo(from.x, from.y);
+        path.lineTo(to.x, to.y);
+    };
+
+    const getShapePath = shape => {
+        const { type, from, to } = shape;
+        const path = new Path2D();
+        switch (type) {
+            case Tools.rect:
+                drawRectangle(path, from, to);
+                break;
+            case Tools.dia:
+                drawDiamond(path, from, to);
+                break;
+            case Tools.ellipse:
+                drawEllipse(path, from, to);
+                break;
+            case Tools.arrow:
+                drawArrow(path, from, to);
+                break;
+            case Tools.line:
+                drawLine(path, from, to);
+                break;
+        }
+        return path;
     };
 
     const draw = () => {
@@ -100,28 +123,11 @@ export default function Canvas() {
 
         [...shapes, currentShape].forEach(shape => {
             if (!shape) return;
-            const { type, from, to } = shape;
-            ctx.beginPath();
-            switch (type) {
-                case Tools.rect:
-                    drawRectangle(ctx, from, to);
-                    break;
-                case Tools.dia:
-                    drawDiamond(ctx, from, to);
-                    break;
-                case Tools.ellipse:
-                    drawEllipse(ctx, from, to);
-                    break;
-                case Tools.arrow:
-                    drawArrow(ctx, from, to);
-                    break;
-                case Tools.line:
-                    drawLine(ctx, from, to);
-                    break;
-            }
+            const path = getShapePath(shape);
+
             ctx.strokeStyle = shape === currentShape ? "red" : "blue";
             ctx.lineWidth = 2 / scale;
-            ctx.stroke();
+            ctx.stroke(path);
         });
     };
 
@@ -132,6 +138,28 @@ export default function Canvas() {
 
         if (tool === Tools.pan) return;
 
+        if (tool === Tools.select) {
+            const cursorWorldPos = getPosCompareToWorld(pos.x, pos.y);
+            const ctx = canvasRef.current.getContext("2d");
+            ctx.setTransform(scale, 0, 0, scale, offset.x, offset.y);
+
+            shapes.forEach(shape => {
+                const path = getShapePath(shape);
+
+                ctx.lineWidth = 10 / scale;
+                if (
+                    ctx.isPointInStroke(
+                        path,
+                        cursorWorldPos.x,
+                        cursorWorldPos.y
+                    )
+                ) {
+                    console.log("Selected:", shape);
+                }
+            });
+
+            return;
+        }
         const startWorldPos = getPosCompareToWorld(pos.x, pos.y);
         setStartWorldPos(startWorldPos);
     };
@@ -177,10 +205,11 @@ export default function Canvas() {
         );
         setScale(newScale);
     };
+
     return (
         <canvas
             id="whiteboard"
-            className={`w-dvw h-dvh bg-gray-950 ${tool == Tools.pan ? "cursor-grab" : "cursor-crosshair"}`}
+            className={`w-dvw h-dvh bg-gray-950 ${tool === Tools.pan ? "cursor-grab" : tool === Tools.select ? "" : "cursor-crosshair"}`}
             ref={canvasRef}
             onMouseDown={handleMouseDown}
             onMouseMove={handleMouseMove}
