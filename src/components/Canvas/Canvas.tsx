@@ -12,6 +12,7 @@ export default function Canvas() {
     const [selectedShapes, setSelectedShapes] = useState([]);
 
     const [isDragging, setIsDragging] = useState(false);
+    const [isPanning, setIsPanning] = useState(false);
     const [lastPos, setLastPos] = useState({ x: 0, y: 0 });
     const [startWorldPos, setStartWorldPos] = useState(null);
 
@@ -141,7 +142,7 @@ export default function Canvas() {
         setIsDragging(true);
         setLastPos(pos);
 
-        if (tool === Tools.pan) return;
+        if (tool === Tools.pan || e.button === 1) return setIsPanning(true);
 
         if (tool === Tools.select) {
             const ctx = canvasRef.current.getContext("2d");
@@ -171,13 +172,17 @@ export default function Canvas() {
 
         const pos = { x: e.clientX, y: e.clientY };
 
-        if (tool === Tools.pan) {
+        if (isPanning) {
             const dx = e.clientX - lastPos.x;
             const dy = e.clientY - lastPos.y;
 
             setOffset(prev => ({ x: prev.x + dx, y: prev.y + dy }));
             setLastPos({ x: e.clientX, y: e.clientY });
-        } else if (startWorldPos) {
+
+            return;
+        }
+
+        if (startWorldPos) {
             const endWorldPos = getPosCompareToWorld(pos.x, pos.y);
             setCurrentShape({
                 type: tool,
@@ -189,6 +194,7 @@ export default function Canvas() {
 
     const handleMouseUp = () => {
         setIsDragging(false);
+        setIsPanning(false);
         if (currentShape) {
             setShapes(prev => [...prev, currentShape]);
             setCurrentShape(null);
