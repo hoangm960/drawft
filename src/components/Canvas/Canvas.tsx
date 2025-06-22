@@ -9,7 +9,7 @@ export default function Canvas() {
     const { tool, setTool } = useTool();
     const [shapes, setShapes] = useState([]);
     const [currentShape, setCurrentShape] = useState(null);
-    const [selectedShapes, setSelectedShapes] = useState([]);
+    const [selectedIds, setSelectedIds] = useState([]);
 
     const [isDragging, setIsDragging] = useState(false);
     const [isPanning, setIsPanning] = useState(false);
@@ -21,7 +21,7 @@ export default function Canvas() {
         canvas.width = window.innerWidth;
         canvas.height = window.innerHeight;
         draw();
-    }, [offset, scale, shapes, currentShape, selectedShapes]);
+    }, [offset, scale, shapes, currentShape, selectedIds]);
 
     const getPosCompareToWorld = (x, y) => ({
         x: (x - offset.x) / scale,
@@ -125,10 +125,12 @@ export default function Canvas() {
 
         [...shapes, currentShape].forEach(shape => {
             if (!shape) return;
+            console.log(shape.from, shape.to);
+
             const path = getShapePath(shape);
 
             ctx.strokeStyle =
-                shape === currentShape || selectedShapes.includes(shape)
+                shape === currentShape || selectedIds.includes(shape.id)
                     ? "red"
                     : "blue";
             ctx.lineWidth = 2 / scale;
@@ -158,10 +160,19 @@ export default function Canvas() {
                     cursorWorldPos.x,
                     cursorWorldPos.y
                 );
-                if (hit) hits.push(shape);
+                if (hit) hits.push(shape.id);
             });
 
-            return setSelectedShapes(hits);
+            if (hits.length > 0) {
+                setSelectedIds(hits);
+                setStartWorldPos(cursorWorldPos);
+                return;
+            }
+
+            if (selectedIds.length > 0) {
+                setSelectedIds(hits);
+            }
+            return;
         }
 
         setStartWorldPos(cursorWorldPos);
@@ -171,20 +182,48 @@ export default function Canvas() {
         if (!isDragging) return;
 
         const pos = { x: e.clientX, y: e.clientY };
+        const endWorldPos = getPosCompareToWorld(pos.x, pos.y);
 
         if (isPanning) {
-            const dx = e.clientX - lastPos.x;
-            const dy = e.clientY - lastPos.y;
+            const dx = pos.x - lastPos.x;
+            const dy = pos.y - lastPos.y;
 
             setOffset(prev => ({ x: prev.x + dx, y: prev.y + dy }));
-            setLastPos({ x: e.clientX, y: e.clientY });
+            setLastPos(pos);
+
+            return;
+        }
+
+        if (tool === Tools.select && selectedIds.length > 0) {
+            const dx = endWorldPos.x - startWorldPos.x;
+            const dy = endWorldPos.y - startWorldPos.y;
+            console.log("dx,dy", dx, dy);
+
+            setShapes(prev =>
+                prev.map(shape =>
+                    selectedIds.includes(shape.id)
+                        ? {
+                              ...shape,
+                              from: {
+                                  x: shape.from.x + dx,
+                                  y: shape.from.y + dy,
+                              },
+                              to: {
+                                  x: shape.to.x + dx,
+                                  y: shape.to.y + dy,
+                              },
+                          }
+                        : shape
+                )
+            );
+            setStartWorldPos(endWorldPos);
 
             return;
         }
 
         if (startWorldPos) {
-            const endWorldPos = getPosCompareToWorld(pos.x, pos.y);
             setCurrentShape({
+                id: shapes.length,
                 type: tool,
                 from: startWorldPos,
                 to: endWorldPos,
@@ -198,8 +237,8 @@ export default function Canvas() {
         if (currentShape) {
             setShapes(prev => [...prev, currentShape]);
             setCurrentShape(null);
-            setStartWorldPos(null);
         }
+        setStartWorldPos(null);
     };
 
     const handleWheel = e => {
