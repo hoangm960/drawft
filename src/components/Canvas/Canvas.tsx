@@ -9,6 +9,7 @@ export default function Canvas() {
     const { tool, setTool } = useTool();
     const [shapes, setShapes] = useState([]);
     const [currentShape, setCurrentShape] = useState(null);
+    const [selectedShapes, setSelectedShapes] = useState([]);
 
     const [isDragging, setIsDragging] = useState(false);
     const [lastPos, setLastPos] = useState({ x: 0, y: 0 });
@@ -19,7 +20,7 @@ export default function Canvas() {
         canvas.width = window.innerWidth;
         canvas.height = window.innerHeight;
         draw();
-    }, [offset, scale, shapes, currentShape]);
+    }, [offset, scale, shapes, currentShape, selectedShapes]);
 
     const getPosCompareToWorld = (x, y) => ({
         x: (x - offset.x) / scale,
@@ -125,7 +126,10 @@ export default function Canvas() {
             if (!shape) return;
             const path = getShapePath(shape);
 
-            ctx.strokeStyle = shape === currentShape ? "red" : "blue";
+            ctx.strokeStyle =
+                shape === currentShape || selectedShapes.includes(shape)
+                    ? "red"
+                    : "blue";
             ctx.lineWidth = 2 / scale;
             ctx.stroke(path);
         });
@@ -133,35 +137,33 @@ export default function Canvas() {
 
     const handleMouseDown = e => {
         const pos = { x: e.clientX, y: e.clientY };
+        const cursorWorldPos = getPosCompareToWorld(pos.x, pos.y);
         setIsDragging(true);
         setLastPos(pos);
 
         if (tool === Tools.pan) return;
 
         if (tool === Tools.select) {
-            const cursorWorldPos = getPosCompareToWorld(pos.x, pos.y);
             const ctx = canvasRef.current.getContext("2d");
-            ctx.setTransform(scale, 0, 0, scale, offset.x, offset.y);
+            ctx.setTransform(1, 0, 0, 1, 0, 0);
 
+            let hits = [];
             shapes.forEach(shape => {
                 const path = getShapePath(shape);
 
                 ctx.lineWidth = 10 / scale;
-                if (
-                    ctx.isPointInStroke(
-                        path,
-                        cursorWorldPos.x,
-                        cursorWorldPos.y
-                    )
-                ) {
-                    console.log("Selected:", shape);
-                }
+                const hit = ctx.isPointInStroke(
+                    path,
+                    cursorWorldPos.x,
+                    cursorWorldPos.y
+                );
+                if (hit) hits.push(shape);
             });
 
-            return;
+            return setSelectedShapes(hits);
         }
-        const startWorldPos = getPosCompareToWorld(pos.x, pos.y);
-        setStartWorldPos(startWorldPos);
+
+        setStartWorldPos(cursorWorldPos);
     };
 
     const handleMouseMove = e => {
