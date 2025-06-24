@@ -1,7 +1,9 @@
+import type { MouseEventHandler } from "react";
+
 interface ToolButtonProps {
-    icon: String;
-    onClick: void;
-    tooltip?: String;
+    icon: string;
+    onClick: MouseEventHandler;
+    tooltip?: string;
 }
 
 export default function ToolButton({

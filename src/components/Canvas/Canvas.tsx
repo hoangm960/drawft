@@ -1,34 +1,48 @@
 import { useState, useRef, useEffect } from "react";
-import { Tools, useTool } from "@/store.ts";
+import { Tools, useTool } from "@stores/useToolStore";
+
+interface Point {
+    x: number;
+    y: number;
+}
+
+interface Shape {
+    id: number;
+    type: Tools;
+    from: Point;
+    to: Point;
+}
 
 export default function Canvas() {
-    const canvasRef = useRef(null);
-    const [offset, setOffset] = useState({ x: 0, y: 0 });
-    const [scale, setScale] = useState(1);
+    const canvasRef = useRef<HTMLCanvasElement | null>(null);
+    const [offset, setOffset] = useState<Point>({ x: 0, y: 0 });
+    const [scale, setScale] = useState<number>(1);
 
-    const { tool, setTool } = useTool();
-    const [shapes, setShapes] = useState([]);
-    const [currentShape, setCurrentShape] = useState(null);
-    const [selectedIds, setSelectedIds] = useState([]);
+    const { tool } = useTool();
+    const [shapes, setShapes] = useState<Shape[]>([]);
+    const [currentShape, setCurrentShape] = useState<Shape | null>(null);
+    const [selectedIds, setSelectedIds] = useState<number[]>([]);
 
-    const [isDragging, setIsDragging] = useState(false);
-    const [isPanning, setIsPanning] = useState(false);
-    const [lastPos, setLastPos] = useState({ x: 0, y: 0 });
-    const [startWorldPos, setStartWorldPos] = useState(null);
+    const [isDragging, setIsDragging] = useState<boolean>(false);
+    const [isPanning, setIsPanning] = useState<boolean>(false);
+    const [lastPos, setLastPos] = useState<Point>({ x: 0, y: 0 });
+    const [startWorldPos, setStartWorldPos] = useState<Point | null>(null);
 
     useEffect(() => {
         const canvas = canvasRef.current;
+        if (!canvas) return;
+
         canvas.width = window.innerWidth;
         canvas.height = window.innerHeight;
-        draw();
+        draw(canvas);
     }, [offset, scale, shapes, currentShape, selectedIds]);
 
-    const getPosCompareToWorld = (x, y) => ({
+    const getPosCompareToWorld = (x: number, y: number) => ({
         x: (x - offset.x) / scale,
         y: (y - offset.y) / scale,
     });
 
-    const drawRectangle = (path, from, to) => {
+    const drawRectangle = (path: Path2D, from: Point, to: Point) => {
         path.rect(
             Math.min(from.x, to.x),
             Math.min(from.y, to.y),
@@ -37,7 +51,7 @@ export default function Canvas() {
         );
     };
 
-    const drawDiamond = (path, from, to) => {
+    const drawDiamond = (path: Path2D, from: Point, to: Point) => {
         const minX = Math.min(from.x, to.x);
         const maxX = Math.max(from.x, to.x);
         const minY = Math.min(from.y, to.y);
@@ -52,7 +66,7 @@ export default function Canvas() {
         path.closePath();
     };
 
-    const drawEllipse = (path, from, to) => {
+    const drawEllipse = (path: Path2D, from: Point, to: Point) => {
         path.ellipse(
             (from.x + to.x) / 2,
             (from.y + to.y) / 2,
@@ -64,7 +78,7 @@ export default function Canvas() {
         );
     };
 
-    const drawArrow = (path, from, to) => {
+    const drawArrow = (path: Path2D, from: Point, to: Point) => {
         const headlen = 10 / scale;
         const dx = to.x - from.x;
         const dy = to.y - from.y;
@@ -83,12 +97,12 @@ export default function Canvas() {
         );
     };
 
-    const drawLine = (path, from, to) => {
+    const drawLine = (path: Path2D, from: Point, to: Point) => {
         path.moveTo(from.x, from.y);
         path.lineTo(to.x, to.y);
     };
 
-    const getShapePath = shape => {
+    const getShapePath = (shape: Shape) => {
         const { type, from, to } = shape;
         const path = new Path2D();
         switch (type) {
@@ -111,9 +125,9 @@ export default function Canvas() {
         return path;
     };
 
-    const draw = () => {
-        const canvas = canvasRef.current;
+    const draw = (canvas: HTMLCanvasElement) => {
         const ctx = canvas.getContext("2d");
+        if (!ctx) return;
 
         ctx.setTransform(scale, 0, 0, scale, offset.x, offset.y);
         ctx.clearRect(
@@ -125,7 +139,6 @@ export default function Canvas() {
 
         [...shapes, currentShape].forEach(shape => {
             if (!shape) return;
-            console.log(shape.from, shape.to);
 
             const path = getShapePath(shape);
 
@@ -138,7 +151,7 @@ export default function Canvas() {
         });
     };
 
-    const handleMouseDown = e => {
+    const handleMouseDown = (e: React.MouseEvent<HTMLCanvasElement>) => {
         const pos = { x: e.clientX, y: e.clientY };
         const cursorWorldPos = getPosCompareToWorld(pos.x, pos.y);
         setIsDragging(true);
@@ -147,10 +160,13 @@ export default function Canvas() {
         if (tool === Tools.pan || e.button === 1) return setIsPanning(true);
 
         if (tool === Tools.select) {
-            const ctx = canvasRef.current.getContext("2d");
+            const canvas = canvasRef.current;
+            if (!canvas) return;
+            const ctx = canvas.getContext("2d");
+            if (!ctx) return;
             ctx.setTransform(1, 0, 0, 1, 0, 0);
 
-            let hits = [];
+            let hits: number[] = [];
             shapes.forEach(shape => {
                 const path = getShapePath(shape);
 
@@ -178,7 +194,7 @@ export default function Canvas() {
         setStartWorldPos(cursorWorldPos);
     };
 
-    const handleMouseMove = e => {
+    const handleMouseMove = (e: React.MouseEvent<HTMLCanvasElement>) => {
         if (!isDragging) return;
 
         const pos = { x: e.clientX, y: e.clientY };
@@ -194,10 +210,11 @@ export default function Canvas() {
             return;
         }
 
+        if (!startWorldPos) return;
+
         if (tool === Tools.select && selectedIds.length > 0) {
             const dx = endWorldPos.x - startWorldPos.x;
             const dy = endWorldPos.y - startWorldPos.y;
-            console.log("dx,dy", dx, dy);
 
             setShapes(prev =>
                 prev.map(shape =>
@@ -221,14 +238,12 @@ export default function Canvas() {
             return;
         }
 
-        if (startWorldPos) {
-            setCurrentShape({
-                id: shapes.length,
-                type: tool,
-                from: startWorldPos,
-                to: endWorldPos,
-            });
-        }
+        setCurrentShape({
+            id: shapes.length,
+            type: tool,
+            from: startWorldPos,
+            to: endWorldPos,
+        });
     };
 
     const handleMouseUp = () => {
@@ -241,7 +256,7 @@ export default function Canvas() {
         setStartWorldPos(null);
     };
 
-    const handleWheel = e => {
+    const handleWheel = (e: React.WheelEvent<HTMLCanvasElement>) => {
         const zoomCoef = 0.001;
         const zoomRange = [0.1, 5];
 

@@ -3,15 +3,13 @@ import LineIcon from "@assets/line.svg";
 import RectangleIcon from "@assets/rectangle.svg";
 import EllipseIcon from "@assets/ellipse.svg";
 import DiamondIcon from "@assets/diamond.svg";
-import Triangle from "@assets/triangle.svg";
 import ArrowIcon from "@assets/arrow.svg";
 import PanIcon from "@assets/pan.svg";
 import CursorIcon from "@assets/cursor.svg";
-import { useState, useEffect } from "react";
-import { Tools, useTool } from "@/store.ts";
+import { Tools, useTool } from "@stores/useToolStore.ts";
 
 export default function ToolBar() {
-    const { tool, setTool } = useTool();
+    const { setTool } = useTool();
 
     return (
         <div className="absolute bottom-0 w-full h-fit pb-4 flex items-center justify-center">

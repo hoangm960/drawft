@@ -19,9 +19,16 @@
         "strict": true,
         "noUnusedLocals": true,
         "noUnusedParameters": true,
-        "erasableSyntaxOnly": true,
         "noFallthroughCasesInSwitch": true,
-        "noUncheckedSideEffectImports": true
+        "noUncheckedSideEffectImports": true,
+
+        "baseUrl": ".",
+        "paths": {
+            "@/*": ["src/*"],
+            "@components/*": ["src/components/*"],
+            "@assets/*": ["src/assets/*"],
+            "@stores/*": ["src/stores/*"]
+        }
     },
     "include": ["src"]
 }
