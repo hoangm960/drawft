@@ -1,14 +1,7 @@
 import { create } from "zustand";
+import { Tools } from "../types";
 
-export enum Tools {
-    pan = "pan",
-    select = "select",
-    rect = "rect",
-    dia = "dia",
-    ellipse = "ellipse",
-    arrow = "arrow",
-    line = "line",
-}
+export { Tools };
 
 interface ToolState {
     tool: Tools;
