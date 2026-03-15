@@ -22,6 +22,11 @@ export default function Canvas() {
     const [shapes, setShapes] = useState<Shape[]>([]);
     const [currentShape, setCurrentShape] = useState<Shape | null>(null);
     const [selectedIds, setSelectedIds] = useState<number[]>([]);
+    const [isBoxSelecting, setIsBoxSelecting] = useState<boolean>(false);
+    const [selectionBox, setSelectionBox] = useState<{
+        from: Point;
+        to: Point;
+    } | null>(null);
 
     const [isDragging, setIsDragging] = useState<boolean>(false);
     const [isPanning, setIsPanning] = useState<boolean>(false);
@@ -35,7 +40,7 @@ export default function Canvas() {
         canvas.width = window.innerWidth;
         canvas.height = window.innerHeight;
         draw(canvas);
-    }, [offset, scale, shapes, currentShape, selectedIds]);
+    }, [offset, scale, shapes, currentShape, selectedIds, selectionBox]);
 
     const getPosCompareToWorld = (x: number, y: number) => ({
         x: (x - offset.x) / scale,
@@ -125,6 +130,30 @@ export default function Canvas() {
         return path;
     };
 
+    const shapeIntersectsBox = (
+        shape: Shape,
+        box: { from: Point; to: Point }
+    ) => {
+        const shapeBounds = {
+            minX: Math.min(shape.from.x, shape.to.x),
+            maxX: Math.max(shape.from.x, shape.to.x),
+            minY: Math.min(shape.from.y, shape.to.y),
+            maxY: Math.max(shape.from.y, shape.to.y),
+        };
+        const boxBounds = {
+            minX: Math.min(box.from.x, box.to.x),
+            maxX: Math.max(box.from.x, box.to.x),
+            minY: Math.min(box.from.y, box.to.y),
+            maxY: Math.max(box.from.y, box.to.y),
+        };
+        return !(
+            shapeBounds.maxX < boxBounds.minX ||
+            shapeBounds.minX > boxBounds.maxX ||
+            shapeBounds.maxY < boxBounds.minY ||
+            shapeBounds.minY > boxBounds.maxY
+        );
+    };
+
     const draw = (canvas: HTMLCanvasElement) => {
         const ctx = canvas.getContext("2d");
         if (!ctx) return;
@@ -146,9 +175,36 @@ export default function Canvas() {
                 shape === currentShape || selectedIds.includes(shape.id)
                     ? "red"
                     : "blue";
+            ctx.fillStyle = "transparent";
             ctx.lineWidth = 2 / scale;
+            ctx.fill(path);
             ctx.stroke(path);
         });
+
+        if (selectionBox) {
+            const { from, to } = selectionBox;
+            ctx.setTransform(1, 0, 0, 1, 0, 0);
+            const screenFrom = {
+                x: from.x * scale + offset.x,
+                y: from.y * scale + offset.y,
+            };
+            const screenTo = {
+                x: to.x * scale + offset.x,
+                y: to.y * scale + offset.y,
+            };
+            const x = Math.min(screenFrom.x, screenTo.x);
+            const y = Math.min(screenFrom.y, screenTo.y);
+            const w = Math.abs(screenTo.x - screenFrom.x);
+            const h = Math.abs(screenTo.y - screenFrom.y);
+            ctx.fillStyle = "rgba(59, 130, 246, 0.2)";
+            ctx.fillRect(x, y, w, h);
+            ctx.strokeStyle = "rgb(59, 130, 246)";
+            ctx.lineWidth = 1;
+            ctx.setLineDash([5, 5]);
+            ctx.strokeRect(x, y, w, h);
+            ctx.setLineDash([]);
+            ctx.setTransform(scale, 0, 0, scale, offset.x, offset.y);
+        }
     };
 
     const handleMouseDown = (e: React.MouseEvent<HTMLCanvasElement>) => {
@@ -167,29 +223,53 @@ export default function Canvas() {
             ctx.setTransform(1, 0, 0, 1, 0, 0);
 
             let hitId: number | null = null;
-            for (const shape of shapes) {
+            for (const shape of [...shapes].reverse()) {
                 const path = getShapePath(shape);
                 ctx.lineWidth = 10 / scale;
-                if (
-                    ctx.isPointInStroke(
+                const isInStroke = ctx.isPointInStroke(
+                    path,
+                    cursorWorldPos.x,
+                    cursorWorldPos.y
+                );
+                const isPointInFillFn = (
+                    ctx as unknown as {
+                        isPointInFill?: (
+                            path: Path2D,
+                            x: number,
+                            y: number
+                        ) => boolean;
+                    }
+                ).isPointInFill;
+                const isInFill =
+                    isPointInFillFn?.(
                         path,
                         cursorWorldPos.x,
                         cursorWorldPos.y
-                    )
-                ) {
+                    ) ?? false;
+                if (isInStroke || isInFill) {
                     hitId = shape.id;
                     break;
                 }
             }
 
             if (hitId !== null) {
-                setSelectedIds([hitId]);
+                if (e.shiftKey) {
+                    setSelectedIds(prev =>
+                        prev.includes(hitId!)
+                            ? prev.filter(id => id !== hitId)
+                            : [...prev, hitId!]
+                    );
+                } else {
+                    setSelectedIds([hitId]);
+                }
                 setStartWorldPos(cursorWorldPos);
                 return;
             }
 
-            if (selectedIds.length > 0) {
+            if (!e.shiftKey) {
                 setSelectedIds([]);
+                setIsBoxSelecting(true);
+                setSelectionBox({ from: cursorWorldPos, to: cursorWorldPos });
             }
             return;
         }
@@ -210,6 +290,13 @@ export default function Canvas() {
             setOffset(prev => ({ x: prev.x + dx, y: prev.y + dy }));
             setLastPos(pos);
 
+            return;
+        }
+
+        if (isBoxSelecting) {
+            setSelectionBox(prev =>
+                prev ? { from: prev.from, to: endWorldPos } : null
+            );
             return;
         }
 
@@ -252,6 +339,18 @@ export default function Canvas() {
     const handleMouseUp = () => {
         setIsDragging(false);
         setIsPanning(false);
+
+        if (isBoxSelecting && selectionBox) {
+            const selected = shapes
+                .filter(shape => shapeIntersectsBox(shape, selectionBox))
+                .map(shape => shape.id);
+            setSelectedIds(selected);
+            setIsBoxSelecting(false);
+            setSelectionBox(null);
+            setStartWorldPos(null);
+            return;
+        }
+
         if (currentShape) {
             setShapes(prev => [...prev, currentShape]);
             setCurrentShape(null);
