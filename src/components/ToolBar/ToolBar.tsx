@@ -7,6 +7,7 @@ import ArrowIcon from "@assets/arrow.svg";
 import PanIcon from "@assets/pan.svg";
 import CursorIcon from "@assets/cursor.svg";
 import { Tools, useTool } from "../../stores/useToolStore";
+import { useCanvasStore } from "../../stores/useCanvasStore";
 
 const TOOLS_CONFIG = [
     { tool: Tools.pan, icon: PanIcon, tooltip: "Pan" },
@@ -20,10 +21,14 @@ const TOOLS_CONFIG = [
 
 export default function ToolBar() {
     const { tool, setTool } = useTool();
+    const { isDragging, isPanning, isBoxSelecting } = useCanvasStore();
+    const isDisabled = isDragging || isPanning || isBoxSelecting;
 
     return (
-        <div className="absolute bottom-0 w-full h-fit pb-4 flex items-center justify-center">
-            <div className="bg-gray-600/30 h-20 w-fit flex flex-row gap-2 px-8 py-4 rounded-2xl">
+        <div className="absolute bottom-0 w-full h-fit pb-4 flex items-center justify-center pointer-events-none">
+            <div
+                className={`bg-gray-600/30 h-20 w-fit flex flex-row gap-2 px-8 py-4 rounded-2xl pointer-events-auto ${isDisabled ? "pointer-events-none" : ""}`}
+            >
                 {TOOLS_CONFIG.map(({ tool: t, icon, tooltip }) => (
                     <ToolButton
                         key={t}
@@ -31,6 +36,7 @@ export default function ToolBar() {
                         onClick={() => setTool(t)}
                         tooltip={tooltip}
                         isActive={tool === t}
+                        disabled={isDisabled}
                     />
                 ))}
             </div>
