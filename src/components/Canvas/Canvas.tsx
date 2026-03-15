@@ -166,27 +166,30 @@ export default function Canvas() {
             if (!ctx) return;
             ctx.setTransform(1, 0, 0, 1, 0, 0);
 
-            let hits: number[] = [];
-            shapes.forEach(shape => {
+            let hitId: number | null = null;
+            for (const shape of shapes) {
                 const path = getShapePath(shape);
-
                 ctx.lineWidth = 10 / scale;
-                const hit = ctx.isPointInStroke(
-                    path,
-                    cursorWorldPos.x,
-                    cursorWorldPos.y
-                );
-                if (hit) hits.push(shape.id);
-            });
+                if (
+                    ctx.isPointInStroke(
+                        path,
+                        cursorWorldPos.x,
+                        cursorWorldPos.y
+                    )
+                ) {
+                    hitId = shape.id;
+                    break;
+                }
+            }
 
-            if (hits.length > 0) {
-                setSelectedIds(hits);
+            if (hitId !== null) {
+                setSelectedIds([hitId]);
                 setStartWorldPos(cursorWorldPos);
                 return;
             }
 
             if (selectedIds.length > 0) {
-                setSelectedIds(hits);
+                setSelectedIds([]);
             }
             return;
         }
