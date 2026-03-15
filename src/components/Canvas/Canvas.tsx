@@ -35,6 +35,7 @@ export default function Canvas() {
         moveSelectedShapes,
         selectShapesInBox,
         addShape,
+        getNextId,
     } = useCanvasStore();
 
     const getPosCompareToWorld = useCallback(
@@ -58,20 +59,27 @@ export default function Canvas() {
                 canvas.height / scale
             );
 
-            [...shapes, currentShape].forEach(shape => {
-                if (!shape) return;
-
+            shapes.forEach(shape => {
                 const path = getShapePath(shape);
 
-                ctx.strokeStyle =
-                    shape === currentShape || selectedIds.includes(shape.id)
-                        ? "purple"
-                        : "white";
+                ctx.strokeStyle = selectedIds.includes(shape.id)
+                    ? "purple"
+                    : "white";
                 ctx.fillStyle = "transparent";
                 ctx.lineWidth = 2 / scale;
                 ctx.fill(path);
                 ctx.stroke(path);
             });
+
+            if (currentShape) {
+                const path = getShapePath(currentShape);
+
+                ctx.strokeStyle = "purple";
+                ctx.fillStyle = "transparent";
+                ctx.lineWidth = 2 / scale;
+                ctx.fill(path);
+                ctx.stroke(path);
+            }
 
             if (selectionBox) {
                 const { from, to } = selectionBox;
@@ -117,7 +125,7 @@ export default function Canvas() {
             if (!ctx) return null;
             ctx.setTransform(1, 0, 0, 1, 0, 0);
 
-            for (const shape of [...shapes].reverse()) {
+            for (const shape of [...shapes.values()].reverse()) {
                 const path = getShapePath(shape);
                 ctx.lineWidth = 10 / scale;
                 const isInStroke = ctx.isPointInStroke(
@@ -230,7 +238,7 @@ export default function Canvas() {
                 }
 
                 setCurrentShape({
-                    id: shapes.length,
+                    id: getNextId(),
                     type: tool,
                     from: startWorldPos,
                     to: endWorldPos,
@@ -246,7 +254,7 @@ export default function Canvas() {
                 startWorldPos,
                 lastPos,
                 offset,
-                shapes.length,
+                getNextId,
                 getPosCompareToWorld,
                 setOffset,
                 setLastPos,

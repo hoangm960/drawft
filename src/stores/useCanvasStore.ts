@@ -1,8 +1,18 @@
 import { create } from "zustand";
+import RBush from "rbush";
 import type { Shape, Point, BoundingBox } from "../types";
 
+type ShapeBBox = {
+    minX: number;
+    minY: number;
+    maxX: number;
+    maxY: number;
+    id: number;
+};
+
 interface CanvasState {
-    shapes: Shape[];
+    shapes: Map<number, Shape>;
+    shapeIndex: RBush<ShapeBBox>;
     currentShape: Shape | null;
     selectedIds: number[];
     isBoxSelecting: boolean;
@@ -32,41 +42,96 @@ interface CanvasActions {
     setStartWorldPos: (pos: Point | null) => void;
     moveSelectedShapes: (dx: number, dy: number) => void;
     selectShapesInBox: () => void;
+    getNextId: () => number;
     reset: () => void;
 }
 
-const initialState: CanvasState = {
-    shapes: [],
-    currentShape: null,
-    selectedIds: [],
-    isBoxSelecting: false,
-    selectionBox: null,
-    isDragging: false,
-    isPanning: false,
-    offset: { x: 0, y: 0 },
-    scale: 1,
-    lastPos: { x: 0, y: 0 },
-    startWorldPos: null,
-};
+function shapeToBBox(shape: Shape): {
+    minX: number;
+    minY: number;
+    maxX: number;
+    maxY: number;
+} {
+    return {
+        minX: Math.min(shape.from.x, shape.to.x),
+        minY: Math.min(shape.from.y, shape.to.y),
+        maxX: Math.max(shape.from.x, shape.to.x),
+        maxY: Math.max(shape.from.y, shape.to.y),
+    };
+}
+
+function createInitialState(): CanvasState {
+    return {
+        shapes: new Map(),
+        shapeIndex: new RBush(),
+        currentShape: null,
+        selectedIds: [],
+        isBoxSelecting: false,
+        selectionBox: null,
+        isDragging: false,
+        isPanning: false,
+        offset: { x: 0, y: 0 },
+        scale: 1,
+        lastPos: { x: 0, y: 0 },
+        startWorldPos: null,
+    };
+}
+
+const initialState = createInitialState();
 
 export const useCanvasStore = create<CanvasState & CanvasActions>(
     (set, get) => ({
         ...initialState,
 
-        addShape: shape => set(state => ({ shapes: [...state.shapes, shape] })),
+        getNextId: () => {
+            const state = get();
+            let maxId = -1;
+            for (const id of state.shapes.keys()) {
+                if (id > maxId) maxId = id;
+            }
+            return maxId + 1;
+        },
 
-        updateShape: (id, updates) =>
-            set(state => ({
-                shapes: state.shapes.map(s =>
-                    s.id === id ? { ...s, ...updates } : s
-                ),
-            })),
+        addShape: shape => {
+            const newShapes = new Map(get().shapes);
+            newShapes.set(shape.id, shape);
 
-        deleteShapes: ids =>
-            set(state => ({
-                shapes: state.shapes.filter(s => !ids.includes(s.id)),
+            get().shapeIndex.insert({ ...shapeToBBox(shape), id: shape.id });
+
+            set({ shapes: newShapes });
+        },
+
+        updateShape: (id, updates) => {
+            const state = get();
+            const shape = state.shapes.get(id);
+            if (!shape) return;
+
+            const newShapes = new Map(state.shapes);
+            const updatedShape = { ...shape, ...updates };
+            newShapes.set(id, updatedShape);
+
+            state.shapeIndex.remove({ ...shapeToBBox(shape), id });
+            state.shapeIndex.insert({ ...shapeToBBox(updatedShape), id });
+
+            set({ shapes: newShapes });
+        },
+
+        deleteShapes: ids => {
+            const state = get();
+            const newShapes = new Map(state.shapes);
+            for (const id of ids) {
+                const shape = newShapes.get(id);
+                if (shape) {
+                    state.shapeIndex.remove({ ...shapeToBBox(shape), id });
+                }
+                newShapes.delete(id);
+            }
+
+            set({
+                shapes: newShapes,
                 selectedIds: state.selectedIds.filter(id => !ids.includes(id)),
-            })),
+            });
+        },
 
         setCurrentShape: shape => set({ currentShape: shape }),
 
@@ -100,53 +165,51 @@ export const useCanvasStore = create<CanvasState & CanvasActions>(
 
         setStartWorldPos: pos => set({ startWorldPos: pos }),
 
-        moveSelectedShapes: (dx, dy) =>
-            set(state => ({
-                shapes: state.shapes.map(s =>
-                    state.selectedIds.includes(s.id)
-                        ? {
-                              ...s,
-                              from: { x: s.from.x + dx, y: s.from.y + dy },
-                              to: { x: s.to.x + dx, y: s.to.y + dy },
-                          }
-                        : s
-                ),
-            })),
+        moveSelectedShapes: (dx, dy) => {
+            const state = get();
+            const newShapes = new Map(state.shapes);
+
+            for (const id of state.selectedIds) {
+                const shape = newShapes.get(id);
+                if (!shape) continue;
+
+                state.shapeIndex.remove({ ...shapeToBBox(shape), id });
+
+                const updatedShape = {
+                    ...shape,
+                    from: { x: shape.from.x + dx, y: shape.from.y + dy },
+                    to: { x: shape.to.x + dx, y: shape.to.y + dy },
+                };
+                newShapes.set(id, updatedShape);
+                state.shapeIndex.insert({ ...shapeToBBox(updatedShape), id });
+            }
+
+            set({ shapes: newShapes });
+        },
 
         selectShapesInBox: () => {
             const state = get();
             if (!state.selectionBox) return;
-            const selected = state.shapes
-                .filter(s => {
-                    const shapeBounds = {
-                        from: {
-                            x: Math.min(s.from.x, s.to.x),
-                            y: Math.min(s.from.y, s.to.y),
-                        },
-                        to: {
-                            x: Math.max(s.from.x, s.to.x),
-                            y: Math.max(s.from.y, s.to.y),
-                        },
-                    };
-                    const box = state.selectionBox;
-                    if (!box) return false;
-                    const boxBounds = {
-                        minX: Math.min(box.from.x, box.to.x),
-                        maxX: Math.max(box.from.x, box.to.x),
-                        minY: Math.min(box.from.y, box.to.y),
-                        maxY: Math.max(box.from.y, box.to.y),
-                    };
-                    return !(
-                        shapeBounds.to.x < boxBounds.minX ||
-                        shapeBounds.from.x > boxBounds.maxX ||
-                        shapeBounds.to.y < boxBounds.minY ||
-                        shapeBounds.from.y > boxBounds.maxY
-                    );
-                })
-                .map(s => s.id);
+
+            const box = state.selectionBox;
+            const boxBounds = {
+                minX: Math.min(box.from.x, box.to.x),
+                maxX: Math.max(box.from.x, box.to.x),
+                minY: Math.min(box.from.y, box.to.y),
+                maxY: Math.max(box.from.y, box.to.y),
+            };
+
+            const found = state.shapeIndex.search({
+                minX: boxBounds.minX,
+                minY: boxBounds.minY,
+                maxX: boxBounds.maxX,
+                maxY: boxBounds.maxY,
+            });
+
+            const selected = found.map(item => item.id as number);
             set({ selectedIds: selected });
         },
 
-        reset: () => set(initialState),
+        reset: () => set(createInitialState()),
     })
 );
