@@ -1,4 +1,3 @@
-import { useState } from "react";
 import Canvas from "@components/Canvas/Canvas.tsx";
 import ToolBar from "@components/ToolBar/ToolBar.tsx";
 

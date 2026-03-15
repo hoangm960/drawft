@@ -9,7 +9,7 @@ import CursorIcon from "@assets/cursor.svg";
 import { Tools, useTool } from "@stores/useToolStore.ts";
 
 export default function ToolBar() {
-    const { setTool } = useTool();
+    const { tool, setTool } = useTool();
 
     return (
         <div className="absolute bottom-0 w-full h-fit pb-4 flex items-center justify-center">
@@ -20,6 +20,7 @@ export default function ToolBar() {
                         setTool(Tools.pan);
                     }}
                     tooltip="Pan"
+                    isActive={tool == Tools.pan}
                 ></ToolButton>
                 <ToolButton
                     icon={CursorIcon}
@@ -27,6 +28,7 @@ export default function ToolBar() {
                         setTool(Tools.select);
                     }}
                     tooltip="Select"
+                    isActive={tool == Tools.select}
                 ></ToolButton>
                 <ToolButton
                     icon={RectangleIcon}
@@ -34,6 +36,7 @@ export default function ToolBar() {
                         setTool(Tools.rect);
                     }}
                     tooltip="Rectangle"
+                    isActive={tool == Tools.rect}
                 ></ToolButton>
                 <ToolButton
                     icon={DiamondIcon}
@@ -41,6 +44,7 @@ export default function ToolBar() {
                         setTool(Tools.dia);
                     }}
                     tooltip="Diamond"
+                    isActive={tool == Tools.dia}
                 ></ToolButton>
                 <ToolButton
                     icon={EllipseIcon}
@@ -48,6 +52,7 @@ export default function ToolBar() {
                         setTool(Tools.ellipse);
                     }}
                     tooltip="Ellipse"
+                    isActive={tool == Tools.ellipse}
                 ></ToolButton>
                 <ToolButton
                     icon={ArrowIcon}
@@ -55,6 +60,7 @@ export default function ToolBar() {
                         setTool(Tools.arrow);
                     }}
                     tooltip="Arrow"
+                    isActive={tool == Tools.arrow}
                 ></ToolButton>
                 <ToolButton
                     icon={LineIcon}
@@ -62,6 +68,7 @@ export default function ToolBar() {
                         setTool(Tools.line);
                     }}
                     tooltip="Line"
+                    isActive={tool == Tools.line}
                 ></ToolButton>
             </div>
         </div>
