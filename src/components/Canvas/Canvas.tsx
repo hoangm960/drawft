@@ -65,8 +65,8 @@ export default function Canvas() {
 
                 ctx.strokeStyle =
                     shape === currentShape || selectedIds.includes(shape.id)
-                        ? "red"
-                        : "blue";
+                        ? "purple"
+                        : "white";
                 ctx.fillStyle = "transparent";
                 ctx.lineWidth = 2 / scale;
                 ctx.fill(path);
@@ -125,17 +125,11 @@ export default function Canvas() {
                     worldPos.x,
                     worldPos.y
                 );
-                const isPointInFillFn = (
-                    ctx as unknown as {
-                        isPointInFill?: (
-                            path: Path2D,
-                            x: number,
-                            y: number
-                        ) => boolean;
-                    }
-                ).isPointInFill;
-                const isInFill =
-                    isPointInFillFn?.(path, worldPos.x, worldPos.y) ?? false;
+                const isInFill = ctx.isPointInPath(
+                    path,
+                    worldPos.x,
+                    worldPos.y
+                );
                 if (isInStroke || isInFill) {
                     return shape.id;
                 }
