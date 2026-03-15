@@ -162,9 +162,10 @@ export default function Canvas() {
                     const hitId = hitTest(cursorWorldPos);
 
                     if (hitId !== null) {
+                        const isAlreadySelected = selectedIds.includes(hitId);
                         if (e.shiftKey) {
                             toggleSelectedIds(hitId, true);
-                        } else {
+                        } else if (!isAlreadySelected) {
                             setSelectedIds([hitId]);
                         }
                         setStartWorldPos(cursorWorldPos);
@@ -196,6 +197,7 @@ export default function Canvas() {
                 setStartWorldPos,
                 setIsBoxSelecting,
                 setSelectionBox,
+                selectedIds,
             ]
         );
 
