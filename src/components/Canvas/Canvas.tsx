@@ -35,6 +35,7 @@ export default function Canvas() {
         moveSelectedShapes,
         selectShapesInBox,
         addShape,
+        deleteShapes,
         getNextId,
     } = useCanvasStore();
 
@@ -300,6 +301,22 @@ export default function Canvas() {
         setIsBoxSelecting,
         setStartWorldPos,
     ]);
+
+    useEffect(() => {
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if (e.key === "Delete" || e.key === "Backspace") {
+                const state = useCanvasStore.getState();
+                if (state.selectedIds.length > 0) {
+                    deleteShapes(state.selectedIds);
+                }
+            }
+        };
+        window.addEventListener("keydown", handleKeyDown);
+
+        return () => {
+            window.removeEventListener("keydown", handleKeyDown);
+        };
+    }, [deleteShapes]);
 
     const handleMouseUp = useCallback(() => {
         setIsDragging(false);
