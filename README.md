@@ -23,17 +23,17 @@ This is an infinite canvas that let you draft your ideas with drawing (hence the
 ## Getting Started
 
 ```bash
-npm install
-npm run dev
+bun install
+bun run dev
 ```
 
 ## Available Scripts
 
 | Command              | Description              |
 | -------------------- | ------------------------ |
-| `npm run dev`        | Start development server |
-| `npm run build`      | Build for production     |
-| `npm run lint`       | Lint code                |
-| `npm run type-check` | Type check               |
-| `npm run format`     | Format code              |
-| `npm run preview`    | Preview production build |
+| `bun run dev`        | Start development server |
+| `bun run build`      | Build for production     |
+| `bun run lint`       | Lint code                |
+| `bun run type-check` | Type check               |
+| `bun run format`     | Format code              |
+| `bun run preview`    | Preview production build |
