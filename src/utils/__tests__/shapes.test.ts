@@ -1,59 +1,67 @@
-import { Tools, type BoundingBox, type Shape } from "@/types";
+import { Tools, type BoundingBox, type Point, type Shape } from "@/types";
 import {
+    drawArrow,
+    drawDiamond,
+    drawEllipse,
+    drawLine,
+    drawRectangle,
     getBoundingBox,
     getBoundingBoxBounds,
+    getShapePath,
     shapeIntersectsBox,
 } from "../shapes";
 
+type PathCall = {
+    method: string;
+    args: number[];
+};
+
+const getCalls = (path: Path2D): PathCall[] =>
+    (path as unknown as { calls: PathCall[] }).calls;
+
+const makeShape = (
+    id: number,
+    from: Point,
+    to: Point,
+    type: Tools = Tools.rect
+): Shape => ({ id, type, from, to });
+
+const makeBBox = (from: Point, to: Point): BoundingBox => ({ from, to });
+
 describe("getBoundingBox", () => {
     test("returns correct box when from < to", () => {
-        const shape: Shape = {
-            id: 1,
-            type: Tools.rect,
-            from: { x: 100, y: 100 },
-            to: { x: 200, y: 300 },
-        };
-
-        expect(getBoundingBox(shape)).toEqual({
+        expect(
+            getBoundingBox(makeShape(1, { x: 100, y: 100 }, { x: 200, y: 300 }))
+        ).toEqual({
             from: { x: 100, y: 100 },
             to: { x: 200, y: 300 },
         });
     });
 
-    test("normalize when from > to", () => {
-        const shape: Shape = {
-            id: 2,
-            type: Tools.rect,
-            from: { x: 200, y: 300 },
-            to: { x: 100, y: 100 },
-        };
-        expect(getBoundingBox(shape)).toEqual({
+    test("normalizes when from > to", () => {
+        expect(
+            getBoundingBox(makeShape(2, { x: 200, y: 300 }, { x: 100, y: 100 }))
+        ).toEqual({
             from: { x: 100, y: 100 },
             to: { x: 200, y: 300 },
         });
     });
 
-    test("handles negative coordinate", () => {
-        const shape: Shape = {
-            id: 3,
-            type: Tools.rect,
-            from: { x: -200, y: -300 },
-            to: { x: -100, y: -100 },
-        };
-        expect(getBoundingBox(shape)).toEqual({
+    test("handles negative coordinates", () => {
+        expect(
+            getBoundingBox(
+                makeShape(3, { x: -200, y: -300 }, { x: -100, y: -100 })
+            )
+        ).toEqual({
             from: { x: -200, y: -300 },
             to: { x: -100, y: -100 },
         });
     });
 
     test("handles zero-size shape", () => {
-        const shape: Shape = {
-            id: 4,
-            type: Tools.rect,
-            from: { x: 0, y: 0 },
-            to: { x: 0, y: 0 },
-        };
-        expect(getBoundingBox(shape)).toEqual({
+        expect(
+            getBoundingBox(makeShape(4, { x: 0, y: 0 }, { x: 0, y: 0 }))
+        ).toEqual({
             from: { x: 0, y: 0 },
             to: { x: 0, y: 0 },
         });
@@ -61,12 +69,12 @@ describe("getBoundingBox", () => {
 });
 
 describe("getBoundingBoxBounds", () => {
-    test("return normal bounds", () => {
-        const box: BoundingBox = {
-            from: { x: 100, y: 100 },
-            to: { x: 200, y: 300 },
-        };
-        expect(getBoundingBoxBounds(box)).toEqual({
+    test("returns normal bounds", () => {
+        expect(
+            getBoundingBoxBounds(
+                makeBBox({ x: 100, y: 100 }, { x: 200, y: 300 })
+            )
+        ).toEqual({
             minX: 100,
             maxX: 200,
             minY: 100,
@@ -74,12 +82,12 @@ describe("getBoundingBoxBounds", () => {
         });
     });
 
-    test("return the normal bounds when from > to", () => {
-        const box: BoundingBox = {
-            from: { x: 200, y: 300 },
-            to: { x: 100, y: 100 },
-        };
-        expect(getBoundingBoxBounds(box)).toEqual({
+    test("returns normal bounds when from > to", () => {
+        expect(
+            getBoundingBoxBounds(
+                makeBBox({ x: 200, y: 300 }, { x: 100, y: 100 })
+            )
+        ).toEqual({
             minX: 100,
             maxX: 200,
             minY: 100,
@@ -89,73 +97,220 @@ describe("getBoundingBoxBounds", () => {
 });
 
 describe("shapeIntersectsBox", () => {
-    test("return true when shape overlap box", () => {
-        const shape = {
-            id: 1,
-            type: Tools.rect,
-            from: { x: 100, y: 100 },
-            to: { x: 200, y: 300 },
-        };
-        const box = {
-            from: { x: 0, y: 0 },
-            to: { x: 110, y: 120 },
-        };
-        expect(shapeIntersectsBox(shape, box)).toEqual(true);
+    const rect = makeShape(1, { x: 100, y: 100 }, { x: 200, y: 300 });
+
+    test("returns true when shape overlaps box", () => {
+        expect(
+            shapeIntersectsBox(
+                rect,
+                makeBBox({ x: 0, y: 0 }, { x: 110, y: 120 })
+            )
+        ).toBe(true);
     });
 
-    test("return false when shape not overlap box", () => {
-        const shape = {
-            id: 2,
-            type: Tools.rect,
-            from: { x: 100, y: 100 },
-            to: { x: 200, y: 300 },
-        };
-        const box = {
-            from: { x: 0, y: 0 },
-            to: { x: 90, y: 90 },
-        };
-        expect(shapeIntersectsBox(shape, box)).toEqual(false);
+    test("returns false when shape does not overlap box", () => {
+        expect(
+            shapeIntersectsBox(rect, makeBBox({ x: 0, y: 0 }, { x: 90, y: 90 }))
+        ).toBe(false);
     });
 
-    test("return true when shape touch edge of box", () => {
-        const shape = {
-            id: 3,
-            type: Tools.rect,
-            from: { x: 100, y: 100 },
-            to: { x: 200, y: 300 },
-        };
-        const box = {
-            from: { x: 0, y: 100 },
-            to: { x: 100, y: 100 },
-        };
-        expect(shapeIntersectsBox(shape, box)).toEqual(true);
+    test("returns true when shape touches edge of box", () => {
+        expect(
+            shapeIntersectsBox(
+                rect,
+                makeBBox({ x: 0, y: 100 }, { x: 100, y: 100 })
+            )
+        ).toBe(true);
     });
 
-    test("return true when shape contains box", () => {
-        const shape = {
-            id: 4,
-            type: Tools.rect,
-            from: { x: 100, y: 100 },
-            to: { x: 200, y: 300 },
-        };
-        const box = {
-            from: { x: 110, y: 110 },
-            to: { x: 190, y: 290 },
-        };
-        expect(shapeIntersectsBox(shape, box)).toEqual(true);
+    test("returns true when shape contains box", () => {
+        expect(
+            shapeIntersectsBox(
+                rect,
+                makeBBox({ x: 110, y: 110 }, { x: 190, y: 290 })
+            )
+        ).toBe(true);
     });
 
-    test("return true when shape in box", () => {
-        const shape = {
-            id: 4,
-            type: Tools.rect,
-            from: { x: 100, y: 100 },
-            to: { x: 200, y: 300 },
-        };
-        const box = {
-            from: { x: 90, y: 90 },
-            to: { x: 210, y: 310 },
-        };
-        expect(shapeIntersectsBox(shape, box)).toEqual(true);
+    test("returns true when shape is inside box", () => {
+        expect(
+            shapeIntersectsBox(
+                rect,
+                makeBBox({ x: 90, y: 90 }, { x: 210, y: 310 })
+            )
+        ).toBe(true);
+    });
+});
+
+describe("drawRectangle", () => {
+    test("draws rect with normalized origin and size", () => {
+        const path = new Path2D();
+        drawRectangle(path, { x: 100, y: 100 }, { x: 200, y: 300 });
+        expect(getCalls(path)).toEqual([
+            { method: "rect", args: [100, 100, 100, 200] },
+        ]);
+    });
+
+    test("normalizes origin and size when from > to", () => {
+        const path = new Path2D();
+        drawRectangle(path, { x: 200, y: 300 }, { x: 100, y: 100 });
+        expect(getCalls(path)).toEqual([
+            { method: "rect", args: [100, 100, 100, 200] },
+        ]);
+    });
+});
+
+describe("drawDiamond", () => {
+    test("draws diamond using midpoints", () => {
+        const path = new Path2D();
+        drawDiamond(path, { x: 0, y: 0 }, { x: 100, y: 100 });
+        expect(getCalls(path)).toEqual([
+            { method: "moveTo", args: [50, 0] },
+            { method: "lineTo", args: [100, 50] },
+            { method: "lineTo", args: [50, 100] },
+            { method: "lineTo", args: [0, 50] },
+            { method: "closePath", args: [] },
+        ]);
+    });
+
+    test("draws diamond when from > to", () => {
+        const path = new Path2D();
+        drawDiamond(path, { x: 100, y: 100 }, { x: 0, y: 0 });
+        expect(getCalls(path)).toEqual([
+            { method: "moveTo", args: [50, 0] },
+            { method: "lineTo", args: [100, 50] },
+            { method: "lineTo", args: [50, 100] },
+            { method: "lineTo", args: [0, 50] },
+            { method: "closePath", args: [] },
+        ]);
+    });
+});
+
+describe("drawEllipse", () => {
+    test("draws ellipse with center and radii", () => {
+        const path = new Path2D();
+        drawEllipse(path, { x: 0, y: 0 }, { x: 100, y: 50 });
+        expect(getCalls(path)).toEqual([
+            { method: "ellipse", args: [50, 25, 50, 25, 0, 0, 2 * Math.PI] },
+        ]);
+    });
+
+    test("uses absolute radii when from > to", () => {
+        const path = new Path2D();
+        drawEllipse(path, { x: 100, y: 50 }, { x: 0, y: 0 });
+        expect(getCalls(path)).toEqual([
+            { method: "ellipse", args: [50, 25, 50, 25, 0, 0, 2 * Math.PI] },
+        ]);
+    });
+});
+
+describe("drawArrow", () => {
+    test("draws line and arrowhead with default headlen", () => {
+        const path = new Path2D();
+        drawArrow(path, { x: 0, y: 0 }, { x: 100, y: 0 });
+
+        const calls = getCalls(path);
+        expect(calls[0]).toEqual({ method: "moveTo", args: [0, 0] });
+        expect(calls[1]).toEqual({ method: "lineTo", args: [100, 0] });
+        expect(calls[2]).toEqual({
+            method: "lineTo",
+            args: [
+                100 - 10 * Math.cos(Math.PI / 6),
+                10 * Math.sin(Math.PI / 6),
+            ],
+        });
+        expect(calls[3]).toEqual({ method: "moveTo", args: [100, 0] });
+        expect(calls[4]).toEqual({
+            method: "lineTo",
+            args: [
+                100 - 10 * Math.cos(Math.PI / 6),
+                -10 * Math.sin(Math.PI / 6),
+            ],
+        });
+    });
+
+    test("respects custom headlen", () => {
+        const path = new Path2D();
+        drawArrow(path, { x: 0, y: 0 }, { x: 100, y: 0 }, 20);
+
+        const calls = getCalls(path);
+        expect(calls[2]).toEqual({
+            method: "lineTo",
+            args: [
+                100 - 20 * Math.cos(Math.PI / 6),
+                20 * Math.sin(Math.PI / 6),
+            ],
+        });
+        expect(calls[4]).toEqual({
+            method: "lineTo",
+            args: [
+                100 - 20 * Math.cos(Math.PI / 6),
+                -20 * Math.sin(Math.PI / 6),
+            ],
+        });
+    });
+});
+
+describe("drawLine", () => {
+    test("draws a single line from point to point", () => {
+        const path = new Path2D();
+        drawLine(path, { x: 0, y: 0 }, { x: 100, y: 200 });
+        expect(getCalls(path)).toEqual([
+            { method: "moveTo", args: [0, 0] },
+            { method: "lineTo", args: [100, 200] },
+        ]);
+    });
+});
+
+describe("getShapePath", () => {
+    test("returns a Path2D instance", () => {
+        const path = getShapePath(
+            makeShape(1, { x: 0, y: 0 }, { x: 10, y: 10 })
+        );
+        expect(path).toBeInstanceOf(Path2D);
+    });
+
+    test("dispatches rect to drawRectangle", () => {
+        const path = getShapePath(
+            makeShape(1, { x: 0, y: 0 }, { x: 10, y: 10 })
+        );
+        expect(getCalls(path)).toEqual([
+            { method: "rect", args: [0, 0, 10, 10] },
+        ]);
+    });
+
+    test("dispatches dia to drawDiamond", () => {
+        const path = getShapePath(
+            makeShape(1, { x: 0, y: 0 }, { x: 100, y: 100 }, Tools.dia)
+        );
+        expect(getCalls(path)[0]).toEqual({ method: "moveTo", args: [50, 0] });
+        expect(getCalls(path)[4]).toEqual({ method: "closePath", args: [] });
+    });
+
+    test("dispatches ellipse to drawEllipse", () => {
+        const path = getShapePath(
+            makeShape(1, { x: 0, y: 0 }, { x: 100, y: 50 }, Tools.ellipse)
+        );
+        expect(getCalls(path)).toEqual([
+            { method: "ellipse", args: [50, 25, 50, 25, 0, 0, 2 * Math.PI] },
+        ]);
+    });
+
+    test("dispatches arrow to drawArrow", () => {
+        const path = getShapePath(
+            makeShape(1, { x: 0, y: 0 }, { x: 100, y: 0 }, Tools.arrow)
+        );
+        const calls = getCalls(path);
+        expect(calls.filter(c => c.method === "lineTo")).toHaveLength(3);
+    });
+
+    test("dispatches line to drawLine", () => {
+        const path = getShapePath(
+            makeShape(1, { x: 0, y: 0 }, { x: 100, y: 200 }, Tools.line)
+        );
+        expect(getCalls(path)).toEqual([
+            { method: "moveTo", args: [0, 0] },
+            { method: "lineTo", args: [100, 200] },
+        ]);
     });
 });
