@@ -27,8 +27,7 @@ export default function ToolBar() {
     return (
         <div className="absolute bottom-0 w-full h-fit pb-4 flex items-center justify-center pointer-events-none">
             <div
-                className={`bg-gray-600/30 h-20 w-fit flex flex-row gap-2 px-8 py-4 rounded-2xl pointer-events-auto ${isDisabled ? "pointer-events-none" : ""}`}
-            >
+                className={`bg-gray-600/30 h-20 w-fit flex flex-row gap-2 px-8 py-4 rounded-2xl pointer-events-auto ${isDisabled ? "pointer-events-none" : ""}`}>
                 {TOOLS_CONFIG.map(({ tool: t, icon, tooltip }) => (
                     <ToolButton
                         key={t}

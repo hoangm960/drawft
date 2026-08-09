@@ -4,8 +4,8 @@ import ToolBar from "@components/ToolBar/ToolBar.tsx";
 function App() {
     return (
         <div className="w-full h-full">
-            <Canvas></Canvas>
-            <ToolBar></ToolBar>
+            <Canvas />
+            <ToolBar />
         </div>
     );
 }

@@ -24,9 +24,3 @@ export interface Shape {
     from: Point;
     to: Point;
 }
-
-export interface ToolConfig {
-    tool: Tools;
-    icon: string;
-    tooltip: string;
-}

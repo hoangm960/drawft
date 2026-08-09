@@ -47,22 +47,8 @@ interface CanvasActions {
     reset: () => void;
 }
 
-function shapeToBBox(shape: Shape): {
-    minX: number;
-    minY: number;
-    maxX: number;
-    maxY: number;
-} {
-    return {
-        minX: Math.min(shape.from.x, shape.to.x),
-        minY: Math.min(shape.from.y, shape.to.y),
-        maxX: Math.max(shape.from.x, shape.to.x),
-        maxY: Math.max(shape.from.y, shape.to.y),
-    };
-}
-
 function shapeBBox(shape: Shape): ShapeBBox {
-    return { ...shapeToBBox(shape), id: shape.id };
+    return { ...getBoundingBoxBounds(getBoundingBox(shape)), id: shape.id };
 }
 
 const sameBBoxId = (a: ShapeBBox, b: ShapeBBox) => a.id === b.id;
@@ -198,13 +184,7 @@ export const useCanvasStore = create<CanvasState & CanvasActions>(
             const state = get();
             if (!state.selectionBox) return;
 
-            const box = state.selectionBox;
-            const boxBounds = {
-                minX: Math.min(box.from.x, box.to.x),
-                maxX: Math.max(box.from.x, box.to.x),
-                minY: Math.min(box.from.y, box.to.y),
-                maxY: Math.max(box.from.y, box.to.y),
-            };
+            const boxBounds = getBoundingBoxBounds(state.selectionBox);
 
             const found = state.shapeIndex.search({
                 minX: boxBounds.minX,

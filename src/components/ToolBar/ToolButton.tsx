@@ -25,8 +25,7 @@ export default function ToolButton({
         <div
             title={tooltip}
             className={`p-1 flex items-center justify-center rounded-2xl ${isActive ? "bg-gray-500 hover:bg-gray-400" : "bg-gray-300 hover:bg-white"} ${disabled ? "opacity-50 pointer-events-none" : ""}`}
-            onClick={handleClick}
-        >
+            onClick={handleClick}>
             <img src={icon} alt={tooltip} className="max-w-full max-h-full" />
         </div>
     );
