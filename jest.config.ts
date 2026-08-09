@@ -3,11 +3,13 @@ import type { Config } from "jest";
 const config: Config = {
     testEnvironment: "jsdom",
     setupFiles: ["<rootDir>/src/test/setup.ts"],
+    setupFilesAfterEnv: ["<rootDir>/src/test/setupTests.ts"],
     transform: {
         "^.+\\.(ts|tsx|js)$": "babel-jest",
     },
     transformIgnorePatterns: ["node_modules/(?!(rbush|quickselect)/)"],
     moduleNameMapper: {
+        "^.+\\.svg$": "<rootDir>/src/test/svgMock.ts",
         "^@/(.*)$": "<rootDir>/src/$1",
         "^@components/(.*)$": "<rootDir>/src/components/$1",
         "^@stores/(.*)$": "<rootDir>/src/stores/$1",
