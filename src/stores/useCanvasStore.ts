@@ -60,6 +60,12 @@ function shapeToBBox(shape: Shape): {
     };
 }
 
+function shapeBBox(shape: Shape): ShapeBBox {
+    return { ...shapeToBBox(shape), id: shape.id };
+}
+
+const sameBBoxId = (a: ShapeBBox, b: ShapeBBox) => a.id === b.id;
+
 function createInitialState(): CanvasState {
     return {
         shapes: new Map(),
@@ -96,7 +102,7 @@ export const useCanvasStore = create<CanvasState & CanvasActions>(
             const newShapes = new Map(get().shapes);
             newShapes.set(shape.id, shape);
 
-            get().shapeIndex.insert({ ...shapeToBBox(shape), id: shape.id });
+            get().shapeIndex.insert(shapeBBox(shape));
 
             set({ shapes: newShapes });
         },
@@ -110,8 +116,8 @@ export const useCanvasStore = create<CanvasState & CanvasActions>(
             const updatedShape = { ...shape, ...updates };
             newShapes.set(id, updatedShape);
 
-            state.shapeIndex.remove({ ...shapeToBBox(shape), id });
-            state.shapeIndex.insert({ ...shapeToBBox(updatedShape), id });
+            state.shapeIndex.remove(shapeBBox(shape), sameBBoxId);
+            state.shapeIndex.insert(shapeBBox(updatedShape));
 
             set({ shapes: newShapes });
         },
@@ -122,7 +128,7 @@ export const useCanvasStore = create<CanvasState & CanvasActions>(
             for (const id of ids) {
                 const shape = newShapes.get(id);
                 if (shape) {
-                    state.shapeIndex.remove({ ...shapeToBBox(shape), id });
+                    state.shapeIndex.remove(shapeBBox(shape), sameBBoxId);
                 }
                 newShapes.delete(id);
             }
@@ -173,7 +179,7 @@ export const useCanvasStore = create<CanvasState & CanvasActions>(
                 const shape = newShapes.get(id);
                 if (!shape) continue;
 
-                state.shapeIndex.remove({ ...shapeToBBox(shape), id });
+                state.shapeIndex.remove(shapeBBox(shape), sameBBoxId);
 
                 const updatedShape = {
                     ...shape,
@@ -181,7 +187,7 @@ export const useCanvasStore = create<CanvasState & CanvasActions>(
                     to: { x: shape.to.x + dx, y: shape.to.y + dy },
                 };
                 newShapes.set(id, updatedShape);
-                state.shapeIndex.insert({ ...shapeToBBox(updatedShape), id });
+                state.shapeIndex.insert(shapeBBox(updatedShape));
             }
 
             set({ shapes: newShapes });
