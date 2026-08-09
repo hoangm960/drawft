@@ -4,8 +4,9 @@ const config: Config = {
     testEnvironment: "jsdom",
     setupFiles: ["<rootDir>/src/test/setup.ts"],
     transform: {
-        "^.+\\.(ts|tsx)$": "babel-jest",
+        "^.+\\.(ts|tsx|js)$": "babel-jest",
     },
+    transformIgnorePatterns: ["node_modules/(?!(rbush|quickselect)/)"],
     moduleNameMapper: {
         "^@/(.*)$": "<rootDir>/src/$1",
         "^@components/(.*)$": "<rootDir>/src/components/$1",
