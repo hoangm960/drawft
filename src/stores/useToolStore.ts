@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import { Tools } from "../types";
+import { Tools } from "@/types";
 
 export { Tools };
 

@@ -1,5 +1,5 @@
-import { Tools } from "../types";
-import type { Point, Shape, BoundingBox } from "../types";
+import { Tools } from "@/types";
+import type { Point, Shape, BoundingBox } from "@/types";
 
 export const getBoundingBox = (shape: Shape): BoundingBox => ({
     from: {

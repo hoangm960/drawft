@@ -1,8 +1,8 @@
 import { render, fireEvent, act } from "@testing-library/react";
 import Canvas from "../Canvas";
-import { Tools, useTool } from "../../../stores/useToolStore";
-import { useCanvasStore } from "../../../stores/useCanvasStore";
-import type { Point, Shape } from "../../../types";
+import { Tools, useTool } from "@stores/useToolStore";
+import { useCanvasStore } from "@stores/useCanvasStore";
+import type { Point, Shape } from "@/types";
 
 const canvas = () => document.getElementById("whiteboard") as HTMLElement;
 

@@ -1,6 +1,7 @@
 import { create } from "zustand";
 import RBush from "rbush";
-import type { Shape, Point, BoundingBox } from "../types";
+import type { Shape, Point, BoundingBox } from "@/types";
+import { getBoundingBox, getBoundingBoxBounds } from "@/utils/shapes";
 
 type ShapeBBox = {
     minX: number;

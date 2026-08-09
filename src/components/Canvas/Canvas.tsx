@@ -1,9 +1,9 @@
 import { useRef, useCallback, useEffect } from "react";
-import { useTool } from "../../stores/useToolStore";
-import { useCanvasStore } from "../../stores/useCanvasStore";
-import { getShapePath } from "../../utils/shapes";
-import type { Point } from "../../types";
-import { Tools } from "../../types";
+import { useTool } from "@stores/useToolStore";
+import { useCanvasStore } from "@stores/useCanvasStore";
+import { getShapePath } from "@/utils/shapes";
+import type { Point } from "@/types";
+import { Tools } from "@/types";
 
 export default function Canvas() {
     const canvasRef = useRef<HTMLCanvasElement | null>(null);
