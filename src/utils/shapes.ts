@@ -1,5 +1,5 @@
 import { Tools } from "@/types";
-import type { Point, Shape, BoundingBox } from "@/types";
+import type { Point, Shape, BoundingBox, ResizeHandle } from "@/types";
 
 export const getBoundingBox = (shape: Shape): BoundingBox => ({
     from: {
@@ -116,4 +116,59 @@ export const drawArrow = (
 export const drawLine = (path: Path2D, from: Point, to: Point) => {
     path.moveTo(from.x, from.y);
     path.lineTo(to.x, to.y);
+};
+
+export const getResizeHandles = (shape: Shape): Record<ResizeHandle, Point> => {
+    const { minX, maxX, minY, maxY } = getBoundingBoxBounds(
+        getBoundingBox(shape)
+    );
+
+    return {
+        nw: { x: minX, y: minY },
+        ne: { x: maxX, y: minY },
+        se: { x: maxX, y: maxY },
+        sw: { x: minX, y: maxY },
+    };
+};
+
+const RESIZE_DIRS: Record<
+    ResizeHandle,
+    Array<{ axis: "x" | "y"; edge: "min" | "max" }>
+> = {
+    nw: [
+        { axis: "x", edge: "min" },
+        { axis: "y", edge: "min" },
+    ],
+    ne: [
+        { axis: "x", edge: "max" },
+        { axis: "y", edge: "min" },
+    ],
+    se: [
+        { axis: "x", edge: "max" },
+        { axis: "y", edge: "max" },
+    ],
+    sw: [
+        { axis: "x", edge: "min" },
+        { axis: "y", edge: "max" },
+    ],
+};
+
+export const resizeShapeFromHandle = (
+    shape: Shape,
+    handle: ResizeHandle,
+    point: Point
+): { from: Point; to: Point } => {
+    const { minX, minY, maxX, maxY } = getBoundingBoxBounds(
+        getBoundingBox(shape)
+    );
+    const bounds = { x: { min: minX, max: maxX }, y: { min: minY, max: maxY } };
+    const from = { ...shape.from };
+    const to = { ...shape.to };
+
+    for (const { axis, edge } of RESIZE_DIRS[handle]) {
+        const endpoint = from[axis] === bounds[axis][edge] ? from : to;
+        endpoint[axis] = point[axis];
+    }
+
+    return { from, to };
 };

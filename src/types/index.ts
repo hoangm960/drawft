@@ -24,3 +24,5 @@ export interface Shape {
     from: Point;
     to: Point;
 }
+
+export type ResizeHandle = "nw" | "ne" | "se" | "sw";

@@ -1,12 +1,30 @@
-import { useRef, useCallback, useEffect } from "react";
+import { useRef, useCallback, useEffect, useState } from "react";
 import { useTool } from "@stores/useToolStore";
 import { useCanvasStore } from "@stores/useCanvasStore";
-import { getShapePath } from "@/utils/shapes";
-import type { Point } from "@/types";
+import {
+    getBoundingBox,
+    getResizeHandles,
+    getShapePath,
+    resizeShapeFromHandle,
+} from "@/utils/shapes";
+import type { Point, ResizeHandle, Shape } from "@/types";
 import { Tools } from "@/types";
+
+const HANDLE_SIZE = 8;
+
+const RESIZE_CURSORS: Record<ResizeHandle, string> = {
+    nw: "cursor-nwse-resize",
+    ne: "cursor-nesw-resize",
+    se: "cursor-nwse-resize",
+    sw: "cursor-nesw-resize",
+};
 
 export default function Canvas() {
     const canvasRef = useRef<HTMLCanvasElement | null>(null);
+    const [resizeHandle, setResizeHandle] = useState<ResizeHandle | null>(null);
+    const [isResizing, setIsResizing] = useState(false);
+    const [resizeStart, setResizeStart] = useState<Shape | null>(null);
+    const [hoverHandle, setHoverHandle] = useState<ResizeHandle | null>(null);
 
     const { tool } = useTool();
     const {
@@ -35,9 +53,13 @@ export default function Canvas() {
         moveSelectedShapes,
         selectShapesInBox,
         addShape,
+        updateShape,
         deleteShapes,
         getNextId,
     } = useCanvasStore();
+
+    const selectedShape =
+        selectedIds.length === 1 ? (shapes.get(selectedIds[0]) ?? null) : null;
 
     const getPosCompareToWorld = useCallback(
         (x: number, y: number): Point => ({
@@ -45,6 +67,27 @@ export default function Canvas() {
             y: (y - offset.y) / scale,
         }),
         [offset, scale]
+    );
+
+    const getHandleAt = useCallback(
+        (screenPos: Point): ResizeHandle | null => {
+            if (!selectedShape) return null;
+            const handles = getResizeHandles(selectedShape);
+            let closest: ResizeHandle | null = null;
+            let closestDist = HANDLE_SIZE;
+            for (const handle of Object.keys(handles) as ResizeHandle[]) {
+                const world = handles[handle];
+                const sx = world.x * scale + offset.x;
+                const sy = world.y * scale + offset.y;
+                const dist = Math.hypot(screenPos.x - sx, screenPos.y - sy);
+                if (dist <= closestDist) {
+                    closestDist = dist;
+                    closest = handle;
+                }
+            }
+            return closest;
+        },
+        [selectedShape, scale, offset]
     );
 
     const draw = useCallback(
@@ -82,6 +125,32 @@ export default function Canvas() {
                 ctx.stroke(path);
             }
 
+            if (selectedShape) {
+                const box = getBoundingBox(selectedShape);
+                const handleSize = HANDLE_SIZE / scale;
+                const handles = getResizeHandles(selectedShape);
+
+                ctx.strokeStyle = "purple";
+                ctx.fillStyle = "transparent";
+                ctx.lineWidth = 1 / scale;
+                ctx.setLineDash([4 / scale, 4 / scale]);
+                ctx.strokeRect(
+                    box.from.x,
+                    box.from.y,
+                    box.to.x - box.from.x,
+                    box.to.y - box.from.y
+                );
+                ctx.setLineDash([]);
+
+                ctx.fillStyle = "white";
+                for (const point of Object.values(handles)) {
+                    const x = point.x - handleSize / 2;
+                    const y = point.y - handleSize / 2;
+                    ctx.fillRect(x, y, handleSize, handleSize);
+                    ctx.strokeRect(x, y, handleSize, handleSize);
+                }
+            }
+
             if (selectionBox) {
                 const { from, to } = selectionBox;
                 ctx.setTransform(1, 0, 0, 1, 0, 0);
@@ -107,7 +176,15 @@ export default function Canvas() {
                 ctx.setTransform(scale, 0, 0, scale, offset.x, offset.y);
             }
         },
-        [shapes, currentShape, selectedIds, selectionBox, offset, scale]
+        [
+            shapes,
+            currentShape,
+            selectedIds,
+            selectedShape,
+            selectionBox,
+            offset,
+            scale,
+        ]
     );
 
     const resizeCanvas = useCallback(() => {
@@ -162,6 +239,14 @@ export default function Canvas() {
                 }
 
                 if (tool === Tools.select) {
+                    const handleHit = getHandleAt(pos);
+                    if (handleHit) {
+                        setResizeHandle(handleHit);
+                        setIsResizing(true);
+                        setResizeStart(selectedShape);
+                        return;
+                    }
+
                     const hitId = hitTest(cursorWorldPos);
 
                     if (hitId !== null) {
@@ -191,6 +276,7 @@ export default function Canvas() {
             [
                 tool,
                 getPosCompareToWorld,
+                getHandleAt,
                 hitTest,
                 setIsDragging,
                 setLastPos,
@@ -201,15 +287,22 @@ export default function Canvas() {
                 setIsBoxSelecting,
                 setSelectionBox,
                 selectedIds,
+                selectedShape,
             ]
         );
 
     const handleMouseMove: React.MouseEventHandler<HTMLCanvasElement> =
         useCallback(
             e => {
-                if (!isDragging) return;
-
                 const pos = { x: e.clientX, y: e.clientY };
+
+                if (!isDragging) {
+                    setHoverHandle(
+                        tool === Tools.select ? getHandleAt(pos) : null
+                    );
+                    return;
+                }
+
                 const endWorldPos = getPosCompareToWorld(pos.x, pos.y);
 
                 if (isPanning) {
@@ -225,6 +318,18 @@ export default function Canvas() {
                         from: selectionBox!.from,
                         to: endWorldPos,
                     });
+                    return;
+                }
+
+                if (isResizing && resizeHandle && resizeStart) {
+                    updateShape(
+                        resizeStart.id,
+                        resizeShapeFromHandle(
+                            resizeStart,
+                            resizeHandle,
+                            endWorldPos
+                        )
+                    );
                     return;
                 }
 
@@ -257,12 +362,17 @@ export default function Canvas() {
                 offset,
                 getNextId,
                 getPosCompareToWorld,
+                getHandleAt,
                 setOffset,
                 setLastPos,
                 setSelectionBox,
                 moveSelectedShapes,
                 setStartWorldPos,
                 setCurrentShape,
+                isResizing,
+                resizeHandle,
+                resizeStart,
+                updateShape,
             ]
         );
 
@@ -322,6 +432,14 @@ export default function Canvas() {
         setIsDragging(false);
         setIsPanning(false);
 
+        if (isResizing) {
+            setIsResizing(false);
+            setResizeHandle(null);
+            setResizeStart(null);
+            setStartWorldPos(null);
+            return;
+        }
+
         if (isBoxSelecting && selectionBox) {
             selectShapesInBox();
             setIsBoxSelecting(false);
@@ -336,6 +454,7 @@ export default function Canvas() {
         }
         setStartWorldPos(null);
     }, [
+        isResizing,
         isBoxSelecting,
         selectionBox,
         currentShape,
@@ -366,6 +485,9 @@ export default function Canvas() {
 
     const getCursorClass = () => {
         if (tool === Tools.pan) return "cursor-grab";
+        if (tool === Tools.select && hoverHandle) {
+            return RESIZE_CURSORS[hoverHandle];
+        }
         if (tool === Tools.select) return "";
         return "cursor-crosshair";
     };
@@ -381,6 +503,7 @@ export default function Canvas() {
             onMouseDown={handleMouseDown}
             onMouseMove={handleMouseMove}
             onMouseUp={handleMouseUp}
+            onMouseLeave={() => setHoverHandle(null)}
             onWheel={handleWheel}
         />
     );
