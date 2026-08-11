@@ -1,5 +1,11 @@
 import { Tools } from "@/types";
-import type { Point, Shape, BoundingBox, ResizeHandle } from "@/types";
+import type {
+    Point,
+    Shape,
+    BoundingBox,
+    CornerHandle,
+    ResizeHandle,
+} from "@/types";
 
 export const getBoundingBox = (shape: Shape): BoundingBox => ({
     from: {
@@ -118,10 +124,10 @@ export const drawLine = (path: Path2D, from: Point, to: Point) => {
     path.lineTo(to.x, to.y);
 };
 
-export const getResizeHandles = (shape: Shape): Record<ResizeHandle, Point> => {
-    const { minX, maxX, minY, maxY } = getBoundingBoxBounds(
-        getBoundingBox(shape)
-    );
+export const getCornerHandles = (
+    box: BoundingBox
+): Record<CornerHandle, Point> => {
+    const { minX, maxX, minY, maxY } = getBoundingBoxBounds(box);
 
     return {
         nw: { x: minX, y: minY },
@@ -131,8 +137,27 @@ export const getResizeHandles = (shape: Shape): Record<ResizeHandle, Point> => {
     };
 };
 
+export const getBoundingBoxForShapes = (shapes: Shape[]): BoundingBox => {
+    if (shapes.length === 0) {
+        return { from: { x: 0, y: 0 }, to: { x: 0, y: 0 } };
+    }
+    const bounds = shapes.map(shape =>
+        getBoundingBoxBounds(getBoundingBox(shape))
+    );
+    return {
+        from: {
+            x: Math.min(...bounds.map(b => b.minX)),
+            y: Math.min(...bounds.map(b => b.minY)),
+        },
+        to: {
+            x: Math.max(...bounds.map(b => b.maxX)),
+            y: Math.max(...bounds.map(b => b.maxY)),
+        },
+    };
+};
+
 const RESIZE_DIRS: Record<
-    ResizeHandle,
+    CornerHandle,
     Array<{ axis: "x" | "y"; edge: "min" | "max" }>
 > = {
     nw: [
@@ -155,7 +180,7 @@ const RESIZE_DIRS: Record<
 
 export const resizeShapeFromHandle = (
     shape: Shape,
-    handle: ResizeHandle,
+    handle: CornerHandle,
     point: Point
 ): { from: Point; to: Point } => {
     const { minX, minY, maxX, maxY } = getBoundingBoxBounds(
@@ -171,4 +196,60 @@ export const resizeShapeFromHandle = (
     }
 
     return { from, to };
+};
+
+export const resizeShapesFromHandle = (
+    shapes: Shape[],
+    handle: ResizeHandle,
+    point: Point
+): Array<{ id: number; from: Point; to: Point }> => {
+    if (handle === "from" || handle === "to") {
+        const shape = shapes[0];
+        return [
+            {
+                id: shape.id,
+                from: handle === "from" ? { ...point } : { ...shape.from },
+                to: handle === "to" ? { ...point } : { ...shape.to },
+            },
+        ];
+    }
+
+    const originalBox = getBoundingBoxForShapes(shapes);
+    const originalBounds = getBoundingBoxBounds(originalBox);
+    const newBox = resizeShapeFromHandle(
+        {
+            id: -1,
+            type: Tools.rect,
+            from: originalBox.from,
+            to: originalBox.to,
+        },
+        handle,
+        point
+    );
+
+    const oldWidth = originalBox.to.x - originalBox.from.x;
+    const oldHeight = originalBox.to.y - originalBox.from.y;
+    const sx = oldWidth === 0 ? 1 : (newBox.to.x - newBox.from.x) / oldWidth;
+    const sy = oldHeight === 0 ? 1 : (newBox.to.y - newBox.from.y) / oldHeight;
+
+    const anchor: Point =
+        handle === "nw"
+            ? { x: originalBounds.maxX, y: originalBounds.maxY }
+            : handle === "ne"
+              ? { x: originalBounds.minX, y: originalBounds.maxY }
+              : handle === "se"
+                ? { x: originalBounds.minX, y: originalBounds.minY }
+                : { x: originalBounds.maxX, y: originalBounds.minY };
+
+    return shapes.map(shape => ({
+        id: shape.id,
+        from: {
+            x: anchor.x + (shape.from.x - anchor.x) * sx,
+            y: anchor.y + (shape.from.y - anchor.y) * sy,
+        },
+        to: {
+            x: anchor.x + (shape.to.x - anchor.x) * sx,
+            y: anchor.y + (shape.to.y - anchor.y) * sy,
+        },
+    }));
 };

@@ -1,11 +1,11 @@
-import { useRef, useCallback, useEffect, useState } from "react";
+import { useRef, useCallback, useEffect, useMemo, useState } from "react";
 import { useTool } from "@stores/useToolStore";
 import { useCanvasStore } from "@stores/useCanvasStore";
 import {
-    getBoundingBox,
-    getResizeHandles,
+    getBoundingBoxForShapes,
+    getCornerHandles,
     getShapePath,
-    resizeShapeFromHandle,
+    resizeShapesFromHandle,
 } from "@/utils/shapes";
 import type { Point, ResizeHandle, Shape } from "@/types";
 import { Tools } from "@/types";
@@ -17,13 +17,15 @@ const RESIZE_CURSORS: Record<ResizeHandle, string> = {
     ne: "cursor-nesw-resize",
     se: "cursor-nwse-resize",
     sw: "cursor-nesw-resize",
+    from: "cursor-move",
+    to: "cursor-move",
 };
 
 export default function Canvas() {
     const canvasRef = useRef<HTMLCanvasElement | null>(null);
     const [resizeHandle, setResizeHandle] = useState<ResizeHandle | null>(null);
     const [isResizing, setIsResizing] = useState(false);
-    const [resizeStart, setResizeStart] = useState<Shape | null>(null);
+    const [resizeStart, setResizeStart] = useState<Shape[] | null>(null);
     const [hoverHandle, setHoverHandle] = useState<ResizeHandle | null>(null);
 
     const { tool } = useTool();
@@ -58,8 +60,30 @@ export default function Canvas() {
         getNextId,
     } = useCanvasStore();
 
-    const selectedShape =
-        selectedIds.length === 1 ? (shapes.get(selectedIds[0]) ?? null) : null;
+    const selectedShapes = useMemo(
+        () =>
+            selectedIds
+                .map(id => shapes.get(id) ?? null)
+                .filter((s): s is Shape => s !== null),
+        [selectedIds, shapes]
+    );
+
+    const isSingleLineLike =
+        selectedShapes.length === 1 &&
+        (selectedShapes[0].type === Tools.arrow ||
+            selectedShapes[0].type === Tools.line);
+
+    const selectionHandles = useMemo<Partial<
+        Record<ResizeHandle, Point>
+    > | null>(
+        () =>
+            selectedShapes.length === 0
+                ? null
+                : isSingleLineLike
+                  ? { from: selectedShapes[0].from, to: selectedShapes[0].to }
+                  : getCornerHandles(getBoundingBoxForShapes(selectedShapes)),
+        [selectedShapes, isSingleLineLike]
+    );
 
     const getPosCompareToWorld = useCallback(
         (x: number, y: number): Point => ({
@@ -71,12 +95,13 @@ export default function Canvas() {
 
     const getHandleAt = useCallback(
         (screenPos: Point): ResizeHandle | null => {
-            if (!selectedShape) return null;
-            const handles = getResizeHandles(selectedShape);
+            if (!selectionHandles) return null;
             let closest: ResizeHandle | null = null;
             let closestDist = HANDLE_SIZE;
-            for (const handle of Object.keys(handles) as ResizeHandle[]) {
-                const world = handles[handle];
+            for (const handle of Object.keys(
+                selectionHandles
+            ) as ResizeHandle[]) {
+                const world = selectionHandles[handle]!;
                 const sx = world.x * scale + offset.x;
                 const sy = world.y * scale + offset.y;
                 const dist = Math.hypot(screenPos.x - sx, screenPos.y - sy);
@@ -87,7 +112,7 @@ export default function Canvas() {
             }
             return closest;
         },
-        [selectedShape, scale, offset]
+        [selectionHandles, scale, offset]
     );
 
     const draw = useCallback(
@@ -125,25 +150,30 @@ export default function Canvas() {
                 ctx.stroke(path);
             }
 
-            if (selectedShape) {
-                const box = getBoundingBox(selectedShape);
+            if (selectionHandles) {
                 const handleSize = HANDLE_SIZE / scale;
-                const handles = getResizeHandles(selectedShape);
 
-                ctx.strokeStyle = "purple";
-                ctx.fillStyle = "transparent";
-                ctx.lineWidth = 1 / scale;
-                ctx.setLineDash([4 / scale, 4 / scale]);
-                ctx.strokeRect(
-                    box.from.x,
-                    box.from.y,
-                    box.to.x - box.from.x,
-                    box.to.y - box.from.y
-                );
-                ctx.setLineDash([]);
+                if (!isSingleLineLike) {
+                    const box = getBoundingBoxForShapes(selectedShapes);
+
+                    ctx.strokeStyle = "purple";
+                    ctx.fillStyle = "transparent";
+                    ctx.lineWidth = 1 / scale;
+                    ctx.setLineDash([4 / scale, 4 / scale]);
+                    ctx.strokeRect(
+                        box.from.x,
+                        box.from.y,
+                        box.to.x - box.from.x,
+                        box.to.y - box.from.y
+                    );
+                    ctx.setLineDash([]);
+                }
 
                 ctx.fillStyle = "white";
-                for (const point of Object.values(handles)) {
+                ctx.strokeStyle = "purple";
+                ctx.lineWidth = 1 / scale;
+                for (const point of Object.values(selectionHandles)) {
+                    if (!point) continue;
                     const x = point.x - handleSize / 2;
                     const y = point.y - handleSize / 2;
                     ctx.fillRect(x, y, handleSize, handleSize);
@@ -180,7 +210,9 @@ export default function Canvas() {
             shapes,
             currentShape,
             selectedIds,
-            selectedShape,
+            selectedShapes,
+            selectionHandles,
+            isSingleLineLike,
             selectionBox,
             offset,
             scale,
@@ -243,7 +275,7 @@ export default function Canvas() {
                     if (handleHit) {
                         setResizeHandle(handleHit);
                         setIsResizing(true);
-                        setResizeStart(selectedShape);
+                        setResizeStart(selectedShapes);
                         return;
                     }
 
@@ -287,7 +319,7 @@ export default function Canvas() {
                 setIsBoxSelecting,
                 setSelectionBox,
                 selectedIds,
-                selectedShape,
+                selectedShapes,
             ]
         );
 
@@ -322,14 +354,14 @@ export default function Canvas() {
                 }
 
                 if (isResizing && resizeHandle && resizeStart) {
-                    updateShape(
-                        resizeStart.id,
-                        resizeShapeFromHandle(
-                            resizeStart,
-                            resizeHandle,
-                            endWorldPos
-                        )
+                    const resized = resizeShapesFromHandle(
+                        resizeStart,
+                        resizeHandle,
+                        endWorldPos
                     );
+                    for (const { id, from, to } of resized) {
+                        updateShape(id, { from, to });
+                    }
                     return;
                 }
 

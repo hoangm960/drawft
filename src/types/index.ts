@@ -25,4 +25,8 @@ export interface Shape {
     to: Point;
 }
 
-export type ResizeHandle = "nw" | "ne" | "se" | "sw";
+export type CornerHandle = "nw" | "ne" | "se" | "sw";
+
+export type EndpointHandle = "from" | "to";
+
+export type ResizeHandle = CornerHandle | EndpointHandle;
