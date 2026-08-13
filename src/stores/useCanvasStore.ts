@@ -3,6 +3,8 @@ import RBush from "rbush";
 import type { Shape, Point, BoundingBox } from "@/types";
 import { getBoundingBox, getBoundingBoxBounds } from "@/utils/shapes";
 
+const PASTE_OFFSET = 10;
+
 type ShapeBBox = {
     minX: number;
     minY: number;
@@ -16,6 +18,7 @@ interface CanvasState {
     shapeIndex: RBush<ShapeBBox>;
     currentShape: Shape | null;
     selectedIds: number[];
+    clipboard: Shape[];
     isBoxSelecting: boolean;
     selectionBox: BoundingBox | null;
     isDragging: boolean;
@@ -30,6 +33,10 @@ interface CanvasActions {
     addShape: (shape: Shape) => void;
     updateShape: (id: number, updates: Partial<Shape>) => void;
     deleteShapes: (ids: number[]) => void;
+    setClipboard: (shapes: Shape[]) => void;
+    copySelectedShapes: () => void;
+    pasteShapes: () => void;
+    duplicateSelectedShapes: () => void;
     setCurrentShape: (shape: Shape | null) => void;
     setSelectedIds: (ids: number[]) => void;
     toggleSelectedIds: (id: number, multi: boolean) => void;
@@ -53,12 +60,36 @@ function shapeBBox(shape: Shape): ShapeBBox {
 
 const sameBBoxId = (a: ShapeBBox, b: ShapeBBox) => a.id === b.id;
 
+const cloneShapes = (
+    state: CanvasState & CanvasActions,
+    shapes: Shape[],
+    dx: number,
+    dy: number
+) => {
+    const newShapes = new Map(state.shapes);
+    const ids: number[] = [];
+    let nextId = state.getNextId();
+    for (const shape of shapes) {
+        const copy: Shape = {
+            ...shape,
+            id: nextId++,
+            from: { x: shape.from.x + dx, y: shape.from.y + dy },
+            to: { x: shape.to.x + dx, y: shape.to.y + dy },
+        };
+        newShapes.set(copy.id, copy);
+        state.shapeIndex.insert(shapeBBox(copy));
+        ids.push(copy.id);
+    }
+    return { shapes: newShapes, ids };
+};
+
 function createInitialState(): CanvasState {
     return {
         shapes: new Map(),
         shapeIndex: new RBush(),
         currentShape: null,
         selectedIds: [],
+        clipboard: [],
         isBoxSelecting: false,
         selectionBox: null,
         isDragging: false,
@@ -124,6 +155,52 @@ export const useCanvasStore = create<CanvasState & CanvasActions>(
                 shapes: newShapes,
                 selectedIds: state.selectedIds.filter(id => !ids.includes(id)),
             });
+        },
+
+        setClipboard: shapes => set({ clipboard: shapes }),
+
+        copySelectedShapes: () => {
+            const state = get();
+            const selected = state.selectedIds
+                .map(id => state.shapes.get(id))
+                .filter((s): s is Shape => s !== undefined);
+            if (selected.length === 0) return;
+            set({
+                clipboard: selected.map(shape => ({
+                    ...shape,
+                    from: { ...shape.from },
+                    to: { ...shape.to },
+                })),
+            });
+        },
+
+        pasteShapes: () => {
+            const state = get();
+            if (state.clipboard.length === 0) return;
+
+            const { shapes, ids } = cloneShapes(
+                state,
+                state.clipboard,
+                PASTE_OFFSET,
+                PASTE_OFFSET
+            );
+            set({ shapes, selectedIds: ids });
+        },
+
+        duplicateSelectedShapes: () => {
+            const state = get();
+            const selected = state.selectedIds
+                .map(id => state.shapes.get(id))
+                .filter((s): s is Shape => s !== undefined);
+            if (selected.length === 0) return;
+
+            const { shapes, ids } = cloneShapes(
+                state,
+                selected,
+                PASTE_OFFSET,
+                PASTE_OFFSET
+            );
+            set({ shapes, selectedIds: ids });
         },
 
         setCurrentShape: shape => set({ currentShape: shape }),

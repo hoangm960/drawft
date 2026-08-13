@@ -68,6 +68,9 @@ export default function Canvas() {
         addShape,
         updateShape,
         deleteShapes,
+        copySelectedShapes,
+        pasteShapes,
+        duplicateSelectedShapes,
         getNextId,
     } = useCanvasStore();
 
@@ -542,10 +545,30 @@ export default function Canvas() {
 
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
+            if (
+                e.target instanceof HTMLInputElement ||
+                e.target instanceof HTMLTextAreaElement
+            ) {
+                return;
+            }
             if (e.key === "Delete" || e.key === "Backspace") {
                 const state = useCanvasStore.getState();
                 if (state.selectedIds.length > 0) {
                     deleteShapes(state.selectedIds);
+                }
+            }
+
+            if (e.ctrlKey || e.metaKey) {
+                const key = e.key.toLowerCase();
+                if (key === "c") {
+                    copySelectedShapes();
+                    e.preventDefault();
+                } else if (key === "v") {
+                    pasteShapes();
+                    e.preventDefault();
+                } else if (key === "d") {
+                    duplicateSelectedShapes();
+                    e.preventDefault();
                 }
             }
         };
@@ -554,7 +577,12 @@ export default function Canvas() {
         return () => {
             window.removeEventListener("keydown", handleKeyDown);
         };
-    }, [deleteShapes]);
+    }, [
+        copySelectedShapes,
+        deleteShapes,
+        duplicateSelectedShapes,
+        pasteShapes,
+    ]);
 
     useEffect(() => {
         if (tool !== Tools.select) {
