@@ -11,7 +11,7 @@ const makeShape = (
     from: Point,
     to: Point,
     type: Tools = Tools.rect
-): Shape => ({ id, type, from, to });
+): Shape => ({ id, type, from, to, rotation: 0 });
 
 type MockHit = { inStroke: boolean; inPath: boolean };
 
@@ -19,6 +19,10 @@ const createMockContext = (hit: MockHit) => ({
     strokeStyle: "",
     fillStyle: "",
     lineWidth: 0,
+    save: jest.fn(),
+    restore: jest.fn(),
+    translate: jest.fn(),
+    rotate: jest.fn(),
     setLineDash: jest.fn(),
     setTransform: jest.fn(),
     clearRect: jest.fn(),
@@ -110,6 +114,7 @@ describe("Canvas", () => {
             type: Tools.rect,
             from: { x: 100, y: 100 },
             to: { x: 200, y: 300 },
+            rotation: 0,
         });
     });
 
@@ -169,6 +174,7 @@ describe("Canvas", () => {
             type: Tools.rect,
             from: { x: 0, y: 0 },
             to: { x: 150, y: 150 },
+            rotation: 0,
         });
     });
 
@@ -188,6 +194,7 @@ describe("Canvas", () => {
             type: Tools.rect,
             from: { x: 0, y: 0 },
             to: { x: -50, y: -50 },
+            rotation: 0,
         });
     });
 
@@ -208,6 +215,7 @@ describe("Canvas", () => {
             type: Tools.rect,
             from: { x: 0, y: 0 },
             to: { x: 80, y: 80 },
+            rotation: 0,
         });
     });
 
@@ -229,6 +237,7 @@ describe("Canvas", () => {
             type: Tools.arrow,
             from: { x: 0, y: 0 },
             to: { x: 150, y: 0 },
+            rotation: 0,
         });
     });
 
@@ -251,12 +260,14 @@ describe("Canvas", () => {
             type: Tools.rect,
             from: { x: 0, y: 0 },
             to: { x: 150, y: 150 },
+            rotation: 0,
         });
         expect(useCanvasStore.getState().shapes.get(1)).toEqual({
             id: 1,
             type: Tools.rect,
             from: { x: 225, y: 225 },
             to: { x: 300, y: 300 },
+            rotation: 0,
         });
     });
 
@@ -284,5 +295,188 @@ describe("Canvas", () => {
         fireEvent.keyDown(window, { key: "Backspace" });
 
         expect(useCanvasStore.getState().shapes.size).toEqual(0);
+    });
+
+    test.each([[Tools.dia], [Tools.ellipse], [Tools.arrow], [Tools.line]])(
+        "commits a %s shape from drag",
+        type => {
+            useTool.getState().setTool(type as Tools);
+            render(<Canvas />);
+
+            fireEvent.mouseDown(canvas(), { clientX: 100, clientY: 100 });
+            fireEvent.mouseMove(canvas(), { clientX: 200, clientY: 300 });
+            fireEvent.mouseUp(canvas());
+
+            const state = useCanvasStore.getState();
+            expect(state.shapes.size).toEqual(1);
+            expect(state.shapes.get(0)?.type).toEqual(type as Tools);
+            expect(state.shapes.get(0)?.rotation).toEqual(0);
+        }
+    );
+
+    test("pans with the middle mouse button in select mode", () => {
+        useTool.getState().setTool(Tools.select);
+        render(<Canvas />);
+
+        fireEvent.mouseDown(canvas(), {
+            clientX: 100,
+            clientY: 100,
+            button: 1,
+        });
+        fireEvent.mouseMove(canvas(), { clientX: 150, clientY: 175 });
+
+        expect(useCanvasStore.getState().offset).toEqual({ x: 50, y: 75 });
+    });
+
+    test("shift+click toggles a selected shape in and out of the selection", () => {
+        useCanvasStore
+            .getState()
+            .addShape(makeShape(0, { x: 0, y: 0 }, { x: 100, y: 100 }));
+        useCanvasStore
+            .getState()
+            .addShape(makeShape(1, { x: 150, y: 150 }, { x: 250, y: 250 }));
+        hit.inStroke = true;
+        render(<Canvas />);
+
+        fireEvent.mouseDown(canvas(), { clientX: 50, clientY: 50 });
+        expect(useCanvasStore.getState().selectedIds).toEqual([1]);
+
+        fireEvent.mouseDown(canvas(), {
+            clientX: 50,
+            clientY: 50,
+            shiftKey: true,
+        });
+        expect(useCanvasStore.getState().selectedIds).toEqual([]);
+
+        fireEvent.mouseDown(canvas(), {
+            clientX: 50,
+            clientY: 50,
+            shiftKey: true,
+        });
+        expect(useCanvasStore.getState().selectedIds).toEqual([1]);
+    });
+
+    test("moves a selected shape by dragging it", () => {
+        useCanvasStore
+            .getState()
+            .addShape(makeShape(0, { x: 0, y: 0 }, { x: 100, y: 100 }));
+        useCanvasStore.getState().setSelectedIds([0]);
+        hit.inStroke = true;
+        render(<Canvas />);
+
+        fireEvent.mouseDown(canvas(), { clientX: 50, clientY: 50 });
+        fireEvent.mouseMove(canvas(), { clientX: 70, clientY: 80 });
+        fireEvent.mouseUp(canvas());
+
+        expect(useCanvasStore.getState().shapes.get(0)).toEqual({
+            id: 0,
+            type: Tools.rect,
+            from: { x: 20, y: 30 },
+            to: { x: 120, y: 130 },
+            rotation: 0,
+        });
+    });
+
+    test("clears the selection when clicking empty space without shift", () => {
+        useCanvasStore
+            .getState()
+            .addShape(makeShape(0, { x: 0, y: 0 }, { x: 100, y: 100 }));
+        useCanvasStore.getState().setSelectedIds([0]);
+        hit.inStroke = false;
+        render(<Canvas />);
+
+        fireEvent.mouseDown(canvas(), { clientX: 400, clientY: 400 });
+
+        expect(useCanvasStore.getState().selectedIds).toEqual([]);
+        expect(useCanvasStore.getState().isBoxSelecting).toBe(true);
+    });
+
+    test("keeps the selection when shift+clicking empty space", () => {
+        useCanvasStore
+            .getState()
+            .addShape(makeShape(0, { x: 0, y: 0 }, { x: 100, y: 100 }));
+        useCanvasStore.getState().setSelectedIds([0]);
+        hit.inStroke = false;
+        render(<Canvas />);
+
+        fireEvent.mouseDown(canvas(), {
+            clientX: 400,
+            clientY: 400,
+            shiftKey: true,
+        });
+
+        expect(useCanvasStore.getState().selectedIds).toEqual([0]);
+        expect(useCanvasStore.getState().isBoxSelecting).toBe(false);
+    });
+
+    test("shows a grab cursor when hovering the rotate handle", () => {
+        useCanvasStore
+            .getState()
+            .addShape(makeShape(0, { x: 0, y: 0 }, { x: 100, y: 100 }));
+        useCanvasStore.getState().setSelectedIds([0]);
+        render(<Canvas />);
+
+        fireEvent.mouseMove(canvas(), { clientX: 50, clientY: -50 });
+        expect(canvas()).toHaveClass("cursor-grab");
+
+        fireEvent.mouseLeave(canvas());
+        expect(canvas()).not.toHaveClass(/cursor-/);
+    });
+
+    test("shows a resize cursor when hovering a corner handle", () => {
+        useCanvasStore
+            .getState()
+            .addShape(makeShape(0, { x: 0, y: 0 }, { x: 100, y: 100 }));
+        useCanvasStore.getState().setSelectedIds([0]);
+        render(<Canvas />);
+
+        fireEvent.mouseMove(canvas(), { clientX: 100, clientY: 100 });
+        expect(canvas()).toHaveClass("cursor-nwse-resize");
+    });
+
+    test("rotates a selected shape by dragging the rotate handle", () => {
+        useCanvasStore
+            .getState()
+            .addShape(makeShape(0, { x: 0, y: 0 }, { x: 100, y: 100 }));
+        useCanvasStore.getState().setSelectedIds([0]);
+        render(<Canvas />);
+
+        fireEvent.mouseDown(canvas(), { clientX: 50, clientY: -50 });
+        fireEvent.mouseMove(canvas(), { clientX: 100, clientY: 50 });
+        fireEvent.mouseUp(canvas());
+
+        const shape = useCanvasStore.getState().shapes.get(0)!;
+        expect(shape.rotation).toBeCloseTo(Math.PI / 2);
+        expect(shape.from).toEqual({ x: 0, y: 0 });
+        expect(shape.to).toEqual({ x: 100, y: 100 });
+    });
+
+    test("box-selects shapes when dragging outside the canvas", () => {
+        useCanvasStore
+            .getState()
+            .addShape(makeShape(0, { x: 0, y: 0 }, { x: 100, y: 100 }));
+        useCanvasStore
+            .getState()
+            .addShape(makeShape(1, { x: 150, y: 150 }, { x: 250, y: 250 }));
+        render(<Canvas />);
+
+        fireEvent.mouseDown(canvas(), { clientX: 50, clientY: 50 });
+        fireEvent.mouseMove(window, { clientX: 200, clientY: 200 });
+        fireEvent.mouseUp(window);
+
+        expect(new Set(useCanvasStore.getState().selectedIds)).toEqual(
+            new Set([0, 1])
+        );
+    });
+
+    test("does nothing when pressing Delete with no selection", () => {
+        useCanvasStore
+            .getState()
+            .addShape(makeShape(0, { x: 0, y: 0 }, { x: 100, y: 100 }));
+        render(<Canvas />);
+
+        fireEvent.keyDown(window, { key: "Delete" });
+
+        expect(useCanvasStore.getState().shapes.size).toEqual(1);
     });
 });
