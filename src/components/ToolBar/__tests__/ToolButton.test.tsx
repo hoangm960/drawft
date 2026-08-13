@@ -24,6 +24,14 @@ describe("ToolButton", () => {
         expect(screen.getByTitle(tooltip)).toBeInTheDocument();
     });
 
+    test("uses an empty title when no tooltip is provided", () => {
+        const { container } = render(
+            <ToolButton icon={icon} onClick={onClick} />
+        );
+
+        expect(container.querySelector("[title]")).toHaveAttribute("title", "");
+    });
+
     test("calls onClick when clicked", () => {
         render(<ToolButton icon={icon} onClick={onClick} tooltip={tooltip} />);
 
