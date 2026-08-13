@@ -7,6 +7,8 @@ import {
     drawRectangle,
     getBoundingBox,
     getBoundingBoxBounds,
+    getBoundingBoxForShapes,
+    getCornerHandles,
     getShapePath,
     shapeIntersectsBox,
 } from "../shapes";
@@ -259,6 +261,56 @@ describe("drawLine", () => {
             { method: "moveTo", args: [0, 0] },
             { method: "lineTo", args: [100, 200] },
         ]);
+    });
+});
+
+describe("getCornerHandles", () => {
+    test("returns corner handles around the box", () => {
+        expect(
+            getCornerHandles(makeBBox({ x: 0, y: 0 }, { x: 100, y: 100 }))
+        ).toEqual({
+            nw: { x: 0, y: 0 },
+            ne: { x: 100, y: 0 },
+            se: { x: 100, y: 100 },
+            sw: { x: 0, y: 100 },
+        });
+    });
+
+    test("normalizes when from > to", () => {
+        expect(
+            getCornerHandles(makeBBox({ x: 100, y: 100 }, { x: 0, y: 0 }))
+        ).toEqual({
+            nw: { x: 0, y: 0 },
+            ne: { x: 100, y: 0 },
+            se: { x: 100, y: 100 },
+            sw: { x: 0, y: 100 },
+        });
+    });
+});
+
+describe("getBoundingBoxForShapes", () => {
+    test("returns the union box of multiple shapes", () => {
+        expect(
+            getBoundingBoxForShapes([
+                makeShape(1, { x: 0, y: 0 }, { x: 100, y: 100 }),
+                makeShape(2, { x: 150, y: 150 }, { x: 200, y: 250 }),
+            ])
+        ).toEqual({ from: { x: 0, y: 0 }, to: { x: 200, y: 250 } });
+    });
+
+    test("returns the shape's box for a single shape", () => {
+        expect(
+            getBoundingBoxForShapes([
+                makeShape(1, { x: 10, y: 20 }, { x: 30, y: 40 }),
+            ])
+        ).toEqual({ from: { x: 10, y: 20 }, to: { x: 30, y: 40 } });
+    });
+
+    test("returns a zero box for an empty selection", () => {
+        expect(getBoundingBoxForShapes([])).toEqual({
+            from: { x: 0, y: 0 },
+            to: { x: 0, y: 0 },
+        });
     });
 });
 
