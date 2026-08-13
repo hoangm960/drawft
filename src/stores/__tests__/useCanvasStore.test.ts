@@ -8,7 +8,7 @@ const makeShape = (
     from: Point,
     to: Point,
     type: Tools = Tools.rect
-): Shape => ({ id, type, from, to });
+): Shape => ({ id, type, from, to, rotation: 0 });
 
 describe("useCanvasStore", () => {
     beforeEach(() => {
@@ -26,6 +26,7 @@ describe("useCanvasStore", () => {
                 type: Tools.rect,
                 from: { x: 100, y: 100 },
                 to: { x: 200, y: 300 },
+                rotation: 0,
             });
             expect(store().shapeIndex.all()).toEqual([
                 { minX: 100, minY: 100, maxX: 200, maxY: 300, id: 1 },
@@ -46,6 +47,7 @@ describe("useCanvasStore", () => {
                 type: Tools.rect,
                 from: { x: 100, y: 100 },
                 to: { x: 110, y: 110 },
+                rotation: 0,
             });
             expect(store().shapeIndex.all()).toEqual([
                 { minX: 100, minY: 100, maxX: 110, maxY: 110, id: 1 },
@@ -69,6 +71,7 @@ describe("useCanvasStore", () => {
                 type: Tools.rect,
                 from: { x: 0, y: 0 },
                 to: { x: 10, y: 10 },
+                rotation: 0,
             });
             expect(store().shapeIndex.all()).toHaveLength(1);
         });
@@ -117,12 +120,14 @@ describe("useCanvasStore", () => {
                 type: Tools.rect,
                 from: { x: 5, y: 5 },
                 to: { x: 15, y: 15 },
+                rotation: 0,
             });
             expect(store().shapes.get(2)).toEqual({
                 id: 2,
                 type: Tools.rect,
                 from: { x: 20, y: 20 },
                 to: { x: 30, y: 30 },
+                rotation: 0,
             });
             expect(
                 store()
@@ -197,6 +202,141 @@ describe("useCanvasStore", () => {
             store().addShape(makeShape(5, { x: 40, y: 40 }, { x: 50, y: 50 }));
 
             expect(store().getNextId()).toEqual(6);
+        });
+    });
+
+    describe("setCurrentShape", () => {
+        test("sets the in-progress shape", () => {
+            const shape = makeShape(1, { x: 0, y: 0 }, { x: 10, y: 10 });
+            store().setCurrentShape(shape);
+
+            expect(store().currentShape).toEqual(shape);
+        });
+
+        test("clears the in-progress shape with null", () => {
+            store().setCurrentShape(
+                makeShape(1, { x: 0, y: 0 }, { x: 10, y: 10 })
+            );
+            store().setCurrentShape(null);
+
+            expect(store().currentShape).toBeNull();
+        });
+    });
+
+    describe("setSelectedIds", () => {
+        test("replaces the whole selection", () => {
+            store().setSelectedIds([1]);
+            store().setSelectedIds([2, 3]);
+
+            expect(store().selectedIds).toEqual([2, 3]);
+        });
+    });
+
+    describe("setSelectionBox", () => {
+        test("sets the selection box", () => {
+            store().setSelectionBox({
+                from: { x: 0, y: 0 },
+                to: { x: 10, y: 10 },
+            });
+
+            expect(store().selectionBox).toEqual({
+                from: { x: 0, y: 0 },
+                to: { x: 10, y: 10 },
+            });
+        });
+
+        test("clears the selection box with null", () => {
+            store().setSelectionBox({
+                from: { x: 0, y: 0 },
+                to: { x: 10, y: 10 },
+            });
+            store().setSelectionBox(null);
+
+            expect(store().selectionBox).toBeNull();
+        });
+    });
+
+    describe("flags and viewport setters", () => {
+        test("setIsBoxSelecting updates the flag", () => {
+            store().setIsBoxSelecting(true);
+            expect(store().isBoxSelecting).toBe(true);
+        });
+
+        test("setIsDragging updates the flag", () => {
+            store().setIsDragging(true);
+            expect(store().isDragging).toBe(true);
+        });
+
+        test("setIsPanning updates the flag", () => {
+            store().setIsPanning(true);
+            expect(store().isPanning).toBe(true);
+        });
+
+        test("setOffset updates the viewport offset", () => {
+            store().setOffset({ x: 100, y: 200 });
+            expect(store().offset).toEqual({ x: 100, y: 200 });
+        });
+
+        test("setScale updates the zoom scale", () => {
+            store().setScale(2.5);
+            expect(store().scale).toEqual(2.5);
+        });
+
+        test("setLastPos updates the last pointer position", () => {
+            store().setLastPos({ x: 50, y: 60 });
+            expect(store().lastPos).toEqual({ x: 50, y: 60 });
+        });
+
+        test("setStartWorldPos updates the drag start position", () => {
+            store().setStartWorldPos({ x: 1, y: 2 });
+            expect(store().startWorldPos).toEqual({ x: 1, y: 2 });
+        });
+    });
+
+    describe("updateShape with rotation", () => {
+        test("re-indexes the spatial index for the rotated bounds", () => {
+            store().addShape(makeShape(1, { x: 0, y: 0 }, { x: 100, y: 50 }));
+            store().updateShape(1, { rotation: Math.PI / 2 });
+
+            const item = store().shapeIndex.all()[0];
+            expect(item.id).toEqual(1);
+            expect(item.minX).toBeCloseTo(25);
+            expect(item.minY).toBeCloseTo(-25);
+            expect(item.maxX).toBeCloseTo(75);
+            expect(item.maxY).toBeCloseTo(75);
+        });
+    });
+
+    describe("moveSelectedShapes", () => {
+        test("preserves rotation while moving", () => {
+            store().addShape(makeShape(1, { x: 0, y: 0 }, { x: 10, y: 10 }));
+            store().updateShape(1, { rotation: Math.PI / 3 });
+            store().setSelectedIds([1]);
+
+            store().moveSelectedShapes(5, 5);
+
+            expect(store().shapes.get(1)).toEqual({
+                id: 1,
+                type: Tools.rect,
+                from: { x: 5, y: 5 },
+                to: { x: 15, y: 15 },
+                rotation: Math.PI / 3,
+            });
+        });
+
+        test("is a no-op when the selected id does not exist", () => {
+            store().addShape(makeShape(1, { x: 0, y: 0 }, { x: 10, y: 10 }));
+            store().setSelectedIds([999]);
+
+            store().moveSelectedShapes(5, 5);
+
+            expect(store().shapes.get(1)).toEqual({
+                id: 1,
+                type: Tools.rect,
+                from: { x: 0, y: 0 },
+                to: { x: 10, y: 10 },
+                rotation: 0,
+            });
         });
     });
 
