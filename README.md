@@ -8,7 +8,6 @@ This is an infinite canvas that let you draft your ideas with drawing (hence the
 - **Drawing Tools** - Rectangle, Diamond, Ellipse, Arrow, Line
 - **Selection** - Click to select, Shift+click for multi-select, box selection
 - **Shape Manipulation** - Move shapes by dragging, delete selected shapes (Delete/Backspace key), resize via drag handles (corner handles for shapes, endpoint handles for line/arrow)
-- **Hand-drawn Style** - Rough.js for sketchy, hand-drawn aesthetic
 - **Performance** - Spatial indexing with rbush for efficient shape queries
 
 ## Tech Stack
@@ -16,7 +15,6 @@ This is an infinite canvas that let you draft your ideas with drawing (hence the
 - React 19 + TypeScript
 - Vite
 - Zustand (state management)
-- Rough.js (rendering)
 - Tailwind CSS 4
 - rbush (spatial indexing)
 
