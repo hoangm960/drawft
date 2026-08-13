@@ -340,6 +340,162 @@ describe("useCanvasStore", () => {
         });
     });
 
+    describe("copySelectedShapes", () => {
+        test("deep-clones the selected shapes into the clipboard", () => {
+            store().addShape(makeShape(1, { x: 0, y: 0 }, { x: 10, y: 10 }));
+            store().setSelectedIds([1]);
+
+            store().copySelectedShapes();
+
+            expect(store().clipboard).toEqual([
+                {
+                    id: 1,
+                    type: Tools.rect,
+                    from: { x: 0, y: 0 },
+                    to: { x: 10, y: 10 },
+                    rotation: 0,
+                },
+            ]);
+            store().clipboard[0].from.x = 999;
+            expect(store().shapes.get(1)?.from.x).toEqual(0);
+        });
+
+        test("preserves the selection order in the clipboard", () => {
+            store().addShape(makeShape(1, { x: 0, y: 0 }, { x: 10, y: 10 }));
+            store().addShape(makeShape(2, { x: 20, y: 20 }, { x: 30, y: 30 }));
+            store().setSelectedIds([2, 1]);
+
+            store().copySelectedShapes();
+
+            expect(store().clipboard.map(shape => shape.id)).toEqual([2, 1]);
+        });
+
+        test("is a no-op when nothing is selected", () => {
+            store().addShape(makeShape(1, { x: 0, y: 0 }, { x: 10, y: 10 }));
+
+            store().copySelectedShapes();
+
+            expect(store().clipboard).toEqual([]);
+        });
+    });
+
+    describe("duplicateSelectedShapes", () => {
+        test("duplicates the selected shape offset by 10px and selects it", () => {
+            store().addShape(makeShape(1, { x: 0, y: 0 }, { x: 10, y: 10 }));
+            store().setSelectedIds([1]);
+
+            store().duplicateSelectedShapes();
+
+            expect(store().shapes.size).toEqual(2);
+            expect(store().shapes.get(2)).toEqual({
+                id: 2,
+                type: Tools.rect,
+                from: { x: 10, y: 10 },
+                to: { x: 20, y: 20 },
+                rotation: 0,
+            });
+            expect(store().selectedIds).toEqual([2]);
+            expect(
+                store()
+                    .shapeIndex.all()
+                    .map(item => item.id)
+                    .sort()
+            ).toEqual([1, 2]);
+        });
+
+        test("duplicates all selected shapes", () => {
+            store().addShape(makeShape(1, { x: 0, y: 0 }, { x: 10, y: 10 }));
+            store().addShape(makeShape(2, { x: 20, y: 20 }, { x: 30, y: 30 }));
+            store().setSelectedIds([1, 2]);
+
+            store().duplicateSelectedShapes();
+
+            expect(store().shapes.size).toEqual(4);
+            expect(store().shapes.get(3)?.from).toEqual({ x: 10, y: 10 });
+            expect(store().shapes.get(4)?.from).toEqual({ x: 30, y: 30 });
+            expect(new Set(store().selectedIds)).toEqual(new Set([3, 4]));
+        });
+
+        test("preserves the rotation of the duplicated shape", () => {
+            store().addShape(makeShape(1, { x: 0, y: 0 }, { x: 10, y: 10 }));
+            store().updateShape(1, { rotation: Math.PI / 3 });
+            store().setSelectedIds([1]);
+
+            store().duplicateSelectedShapes();
+
+            expect(store().shapes.get(2)?.rotation).toBeCloseTo(Math.PI / 3);
+        });
+
+        test("is a no-op when nothing is selected", () => {
+            store().addShape(makeShape(1, { x: 0, y: 0 }, { x: 10, y: 10 }));
+
+            store().duplicateSelectedShapes();
+
+            expect(store().shapes.size).toEqual(1);
+            expect(store().selectedIds).toEqual([]);
+        });
+    });
+
+    describe("pasteShapes", () => {
+        test("pastes the clipboard offset by 10px and selects the pasted shapes", () => {
+            store().addShape(makeShape(1, { x: 0, y: 0 }, { x: 10, y: 10 }));
+            store().setSelectedIds([1]);
+            store().copySelectedShapes();
+
+            store().pasteShapes();
+
+            expect(store().shapes.size).toEqual(2);
+            expect(store().shapes.get(2)).toEqual({
+                id: 2,
+                type: Tools.rect,
+                from: { x: 10, y: 10 },
+                to: { x: 20, y: 20 },
+                rotation: 0,
+            });
+            expect(store().selectedIds).toEqual([2]);
+            expect(
+                store().shapeIndex.search({
+                    minX: 11,
+                    minY: 11,
+                    maxX: 19,
+                    maxY: 19,
+                })
+            ).toEqual([{ minX: 10, minY: 10, maxX: 20, maxY: 20, id: 2 }]);
+        });
+
+        test("stacks repeated pastes by 10px from the clipboard origin", () => {
+            store().addShape(makeShape(1, { x: 0, y: 0 }, { x: 10, y: 10 }));
+            store().setSelectedIds([1]);
+            store().copySelectedShapes();
+
+            store().pasteShapes();
+            store().pasteShapes();
+
+            expect(store().shapes.get(2)?.from).toEqual({ x: 10, y: 10 });
+            expect(store().shapes.get(3)?.from).toEqual({ x: 20, y: 20 });
+        });
+
+        test("preserves the rotation of the pasted shape", () => {
+            store().addShape(makeShape(1, { x: 0, y: 0 }, { x: 10, y: 10 }));
+            store().updateShape(1, { rotation: Math.PI / 3 });
+            store().setSelectedIds([1]);
+            store().copySelectedShapes();
+
+            store().pasteShapes();
+
+            expect(store().shapes.get(2)?.rotation).toBeCloseTo(Math.PI / 3);
+        });
+
+        test("is a no-op when the clipboard is empty", () => {
+            store().addShape(makeShape(1, { x: 0, y: 0 }, { x: 10, y: 10 }));
+
+            store().pasteShapes();
+
+            expect(store().shapes.size).toEqual(1);
+            expect(store().selectedIds).toEqual([]);
+        });
+    });
+
     describe("reset", () => {
         test("restores the initial state", () => {
             store().addShape(makeShape(1, { x: 0, y: 0 }, { x: 10, y: 10 }));

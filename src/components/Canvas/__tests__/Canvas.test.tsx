@@ -479,4 +479,113 @@ describe("Canvas", () => {
 
         expect(useCanvasStore.getState().shapes.size).toEqual(1);
     });
+
+    test("copies the selected shapes with Ctrl+C", () => {
+        useCanvasStore
+            .getState()
+            .addShape(makeShape(0, { x: 0, y: 0 }, { x: 100, y: 100 }));
+        useCanvasStore.getState().setSelectedIds([0]);
+        render(<Canvas />);
+
+        fireEvent.keyDown(window, { key: "c", ctrlKey: true });
+
+        expect(useCanvasStore.getState().clipboard).toEqual([
+            {
+                id: 0,
+                type: Tools.rect,
+                from: { x: 0, y: 0 },
+                to: { x: 100, y: 100 },
+                rotation: 0,
+            },
+        ]);
+    });
+
+    test("pastes the clipboard with Ctrl+V and selects the pasted shape", () => {
+        useCanvasStore
+            .getState()
+            .addShape(makeShape(0, { x: 0, y: 0 }, { x: 100, y: 100 }));
+        useCanvasStore.getState().setSelectedIds([0]);
+        render(<Canvas />);
+        fireEvent.keyDown(window, { key: "c", ctrlKey: true });
+
+        fireEvent.keyDown(window, { key: "v", ctrlKey: true });
+
+        const state = useCanvasStore.getState();
+        expect(state.shapes.size).toEqual(2);
+        expect(state.shapes.get(1)).toEqual({
+            id: 1,
+            type: Tools.rect,
+            from: { x: 10, y: 10 },
+            to: { x: 110, y: 110 },
+            rotation: 0,
+        });
+        expect(state.selectedIds).toEqual([1]);
+    });
+
+    test("duplicates the selected shape with Ctrl+D", () => {
+        useCanvasStore
+            .getState()
+            .addShape(makeShape(0, { x: 0, y: 0 }, { x: 100, y: 100 }));
+        useCanvasStore.getState().setSelectedIds([0]);
+        render(<Canvas />);
+
+        fireEvent.keyDown(window, { key: "d", ctrlKey: true });
+
+        const state = useCanvasStore.getState();
+        expect(state.shapes.size).toEqual(2);
+        expect(state.shapes.get(1)).toEqual({
+            id: 1,
+            type: Tools.rect,
+            from: { x: 10, y: 10 },
+            to: { x: 110, y: 110 },
+            rotation: 0,
+        });
+        expect(state.selectedIds).toEqual([1]);
+    });
+
+    test("treats Cmd shortcuts like Ctrl shortcuts", () => {
+        useCanvasStore
+            .getState()
+            .addShape(makeShape(0, { x: 0, y: 0 }, { x: 100, y: 100 }));
+        useCanvasStore.getState().setSelectedIds([0]);
+        render(<Canvas />);
+
+        fireEvent.keyDown(window, { key: "c", metaKey: true });
+        fireEvent.keyDown(window, { key: "v", metaKey: true });
+
+        const state = useCanvasStore.getState();
+        expect(state.shapes.size).toEqual(2);
+        expect(state.shapes.get(1)?.from).toEqual({ x: 10, y: 10 });
+        expect(state.selectedIds).toEqual([1]);
+    });
+
+    test("does nothing on copy with no selection", () => {
+        useCanvasStore
+            .getState()
+            .addShape(makeShape(0, { x: 0, y: 0 }, { x: 100, y: 100 }));
+        render(<Canvas />);
+
+        fireEvent.keyDown(window, { key: "c", ctrlKey: true });
+
+        expect(useCanvasStore.getState().clipboard).toEqual([]);
+    });
+
+    test("does nothing on paste with an empty clipboard", () => {
+        render(<Canvas />);
+
+        fireEvent.keyDown(window, { key: "v", ctrlKey: true });
+
+        expect(useCanvasStore.getState().shapes.size).toEqual(0);
+    });
+
+    test("does nothing on duplicate with no selection", () => {
+        useCanvasStore
+            .getState()
+            .addShape(makeShape(0, { x: 0, y: 0 }, { x: 100, y: 100 }));
+        render(<Canvas />);
+
+        fireEvent.keyDown(window, { key: "d", ctrlKey: true });
+
+        expect(useCanvasStore.getState().shapes.size).toEqual(1);
+    });
 });
