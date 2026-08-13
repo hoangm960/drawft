@@ -3,10 +3,16 @@ import { useTool } from "@stores/useToolStore";
 import { useCanvasStore } from "@stores/useCanvasStore";
 import {
     getBoundingBoxForShapes,
-    getCornerHandles,
-    getRotateHandle,
+    getBoxCorners,
+    getFrameRotateHandle,
+    getRotateDeltaAngle,
+    getRotationCenter,
+    getRotatedCorners,
+    getShapeCenter,
     getShapePath,
     resizeShapesFromHandle,
+    rotatePoint,
+    rotateShapesFromCenter,
 } from "@/utils/shapes";
 import type { Handles, Point, Shape } from "@/types";
 import { Tools } from "@/types";
@@ -28,7 +34,9 @@ export default function Canvas() {
     const canvasRef = useRef<HTMLCanvasElement | null>(null);
     const [currentHandle, setCurrentHandle] = useState<Handles | null>(null);
     const [isResizing, setIsResizing] = useState(false);
+    const [isRotating, setIsRotating] = useState(false);
     const [resizeStart, setResizeStart] = useState<Shape[] | null>(null);
+    const [rotateStart, setRotateStart] = useState<Point | null>(null);
     const [hoverHandle, setHoverHandle] = useState<Handles | null>(null);
 
     const { tool } = useTool();
@@ -76,19 +84,46 @@ export default function Canvas() {
         (selectedShapes[0].type === Tools.arrow ||
             selectedShapes[0].type === Tools.line);
 
+    const selectionFrame = useMemo<{
+        corners: Point[];
+        angle: number;
+    } | null>(() => {
+        if (selectedShapes.length === 0 || isSingleLineLike) return null;
+
+        if (selectedShapes.length === 1) {
+            const shape = selectedShapes[0];
+            return {
+                corners: getRotatedCorners(shape),
+                angle: shape.rotation,
+            };
+        }
+
+        const box = getBoundingBoxForShapes(selectedShapes);
+        return { corners: getBoxCorners(box), angle: 0 };
+    }, [selectedShapes, isSingleLineLike]);
+
     const selectionHandles = useMemo<Partial<
         Record<Handles, Point>
     > | null>(() => {
-        const box = getBoundingBoxForShapes(selectedShapes);
-        return selectedShapes.length === 0
-            ? null
-            : isSingleLineLike
-              ? { from: selectedShapes[0].from, to: selectedShapes[0].to }
-              : {
-                    ...getCornerHandles(box),
-                    rotate: getRotateHandle(box, ROTATE_HANDLE_PADDING),
-                };
-    }, [selectedShapes, isSingleLineLike]);
+        if (selectedShapes.length === 0) return null;
+        if (isSingleLineLike) {
+            return { from: selectedShapes[0].from, to: selectedShapes[0].to };
+        }
+
+        const frame = selectionFrame!;
+        const [nw, ne, se, sw] = frame.corners;
+        return {
+            nw,
+            ne,
+            se,
+            sw,
+            rotate: getFrameRotateHandle(
+                frame.corners,
+                frame.angle,
+                ROTATE_HANDLE_PADDING
+            ),
+        };
+    }, [selectedShapes, isSingleLineLike, selectionFrame]);
 
     const getPosCompareToWorld = useCallback(
         (x: number, y: number): Point => ({
@@ -131,56 +166,85 @@ export default function Canvas() {
                 canvas.height / scale
             );
 
-            shapes.forEach(shape => {
+            const drawShape = (shape: Shape, strokeStyle: string) => {
                 const path = getShapePath(shape);
 
-                ctx.strokeStyle = selectedIds.includes(shape.id)
-                    ? "purple"
-                    : "white";
+                ctx.save();
+                if (shape.rotation !== 0) {
+                    const center = getShapeCenter(shape);
+                    ctx.translate(center.x, center.y);
+                    ctx.rotate(shape.rotation);
+                    ctx.translate(-center.x, -center.y);
+                }
+                ctx.strokeStyle = strokeStyle;
                 ctx.fillStyle = "transparent";
                 ctx.lineWidth = 2 / scale;
                 ctx.fill(path);
                 ctx.stroke(path);
+                ctx.restore();
+            };
+
+            shapes.forEach(shape => {
+                drawShape(
+                    shape,
+                    selectedIds.includes(shape.id) ? "purple" : "white"
+                );
             });
 
             if (currentShape) {
-                const path = getShapePath(currentShape);
-
-                ctx.strokeStyle = "purple";
-                ctx.fillStyle = "transparent";
-                ctx.lineWidth = 2 / scale;
-                ctx.fill(path);
-                ctx.stroke(path);
+                drawShape(currentShape, "purple");
             }
 
             if (selectionHandles) {
                 const handleSize = HANDLE_SIZE / scale;
 
-                if (!isSingleLineLike) {
-                    const box = getBoundingBoxForShapes(selectedShapes);
-
+                if (!isSingleLineLike && !isRotating) {
                     ctx.strokeStyle = "purple";
                     ctx.fillStyle = "transparent";
                     ctx.lineWidth = 1 / scale;
                     ctx.setLineDash([4 / scale, 4 / scale]);
-                    ctx.strokeRect(
-                        box.from.x,
-                        box.from.y,
-                        box.to.x - box.from.x,
-                        box.to.y - box.from.y
-                    );
+
+                    if (
+                        selectedShapes.length === 1 &&
+                        selectedShapes[0].rotation !== 0
+                    ) {
+                        const shape = selectedShapes[0];
+                        const center = getShapeCenter(shape);
+                        ctx.save();
+                        ctx.translate(center.x, center.y);
+                        ctx.rotate(shape.rotation);
+                        ctx.translate(-center.x, -center.y);
+                        ctx.strokeRect(
+                            Math.min(shape.from.x, shape.to.x),
+                            Math.min(shape.from.y, shape.to.y),
+                            Math.abs(shape.to.x - shape.from.x),
+                            Math.abs(shape.to.y - shape.from.y)
+                        );
+                        ctx.restore();
+                    } else {
+                        const box = getBoundingBoxForShapes(selectedShapes);
+                        ctx.strokeRect(
+                            box.from.x,
+                            box.from.y,
+                            box.to.x - box.from.x,
+                            box.to.y - box.from.y
+                        );
+                    }
+
                     ctx.setLineDash([]);
                 }
 
-                ctx.fillStyle = "white";
-                ctx.strokeStyle = "purple";
-                ctx.lineWidth = 1 / scale;
-                for (const point of Object.values(selectionHandles)) {
-                    if (!point) continue;
-                    const x = point.x - handleSize / 2;
-                    const y = point.y - handleSize / 2;
-                    ctx.fillRect(x, y, handleSize, handleSize);
-                    ctx.strokeRect(x, y, handleSize, handleSize);
+                if (!isRotating) {
+                    ctx.fillStyle = "white";
+                    ctx.strokeStyle = "purple";
+                    ctx.lineWidth = 1 / scale;
+                    for (const point of Object.values(selectionHandles)) {
+                        if (!point) continue;
+                        const x = point.x - handleSize / 2;
+                        const y = point.y - handleSize / 2;
+                        ctx.fillRect(x, y, handleSize, handleSize);
+                        ctx.strokeRect(x, y, handleSize, handleSize);
+                    }
                 }
             }
 
@@ -216,6 +280,7 @@ export default function Canvas() {
             selectedShapes,
             selectionHandles,
             isSingleLineLike,
+            isRotating,
             selectionBox,
             offset,
             scale,
@@ -240,17 +305,11 @@ export default function Canvas() {
 
             for (const shape of [...shapes.values()].reverse()) {
                 const path = getShapePath(shape);
+                const center = getShapeCenter(shape);
+                const local = rotatePoint(worldPos, center, -shape.rotation);
                 ctx.lineWidth = 10 / scale;
-                const isInStroke = ctx.isPointInStroke(
-                    path,
-                    worldPos.x,
-                    worldPos.y
-                );
-                const isInFill = ctx.isPointInPath(
-                    path,
-                    worldPos.x,
-                    worldPos.y
-                );
+                const isInStroke = ctx.isPointInStroke(path, local.x, local.y);
+                const isInFill = ctx.isPointInPath(path, local.x, local.y);
                 if (isInStroke || isInFill) {
                     return shape.id;
                 }
@@ -277,6 +336,10 @@ export default function Canvas() {
                     const handleHit = getHandleAt(pos);
                     if (handleHit) {
                         if (handleHit === "rotate") {
+                            setCurrentHandle("rotate");
+                            setIsRotating(true);
+                            setRotateStart(cursorWorldPos);
+                            setResizeStart(selectedShapes);
                             return;
                         }
 
@@ -360,6 +423,24 @@ export default function Canvas() {
                     return;
                 }
 
+                if (isRotating && rotateStart && resizeStart) {
+                    const center = getRotationCenter(resizeStart);
+                    const angle = getRotateDeltaAngle(
+                        center,
+                        rotateStart,
+                        endWorldPos
+                    );
+                    for (const {
+                        id,
+                        from,
+                        to,
+                        rotation,
+                    } of rotateShapesFromCenter(resizeStart, center, angle)) {
+                        updateShape(id, { from, to, rotation });
+                    }
+                    return;
+                }
+
                 if (
                     isResizing &&
                     currentHandle &&
@@ -392,12 +473,15 @@ export default function Canvas() {
                     type: tool,
                     from: startWorldPos,
                     to: endWorldPos,
+                    rotation: 0,
                 });
             },
             [
                 isDragging,
                 isPanning,
                 isBoxSelecting,
+                isRotating,
+                rotateStart,
                 selectionBox,
                 tool,
                 selectedIds.length,
@@ -482,6 +566,15 @@ export default function Canvas() {
         setIsDragging(false);
         setIsPanning(false);
 
+        if (isRotating) {
+            setIsRotating(false);
+            setRotateStart(null);
+            setResizeStart(null);
+            setCurrentHandle(null);
+            setStartWorldPos(null);
+            return;
+        }
+
         if (isResizing) {
             setIsResizing(false);
             setCurrentHandle(null);
@@ -504,6 +597,7 @@ export default function Canvas() {
         }
         setStartWorldPos(null);
     }, [
+        isRotating,
         isResizing,
         isBoxSelecting,
         selectionBox,
