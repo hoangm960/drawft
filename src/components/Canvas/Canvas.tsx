@@ -460,6 +460,12 @@ export default function Canvas() {
         };
     }, [deleteShapes]);
 
+    useEffect(() => {
+        if (tool !== Tools.select) {
+            setSelectedIds([]);
+        }
+    }, [tool, setSelectedIds]);
+
     const handleMouseUp = useCallback(() => {
         setIsDragging(false);
         setIsPanning(false);
