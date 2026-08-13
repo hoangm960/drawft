@@ -219,20 +219,21 @@ const RESIZE_DIRS: Record<
     ],
 };
 
-export const resizeShapeFromHandle = (
-    shape: Shape,
+const resizePoints = (
+    from: Point,
+    to: Point,
     handle: CornerHandle,
     point: Point
 ): { from: Point; to: Point } => {
-    const { minX, minY, maxX, maxY } = getBoundingBoxBounds(
-        getBoundingBox(shape)
-    );
-    const bounds = { x: { min: minX, max: maxX }, y: { min: minY, max: maxY } };
-    const from = { ...shape.from };
-    const to = { ...shape.to };
+    const bounds = {
+        x: { min: Math.min(from.x, to.x), max: Math.max(from.x, to.x) },
+        y: { min: Math.min(from.y, to.y), max: Math.max(from.y, to.y) },
+    };
+    const newFrom = { ...from };
+    const newTo = { ...to };
 
     for (const { axis, edge } of RESIZE_DIRS[handle]) {
-        const endpoint = from[axis] === bounds[axis][edge] ? from : to;
+        const endpoint = newFrom[axis] === bounds[axis][edge] ? newFrom : newTo;
         endpoint[axis] = point[axis];
     }
 
