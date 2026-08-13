@@ -8,10 +8,20 @@ import {
     getBoundingBox,
     getBoundingBoxBounds,
     getBoundingBoxForShapes,
+    getBoxCorners,
     getCornerHandles,
+    getFrameRotateHandle,
+    getPointAngle,
+    getRotateDeltaAngle,
+    getRotateHandle,
+    getRotationCenter,
+    getRotatedCorners,
+    getShapeCenter,
     getShapePath,
     resizeShapeFromHandle,
     resizeShapesFromHandle,
+    rotatePoint,
+    rotateShapesFromCenter,
     shapeIntersectsBox,
 } from "../shapes";
 
@@ -28,7 +38,7 @@ const makeShape = (
     from: Point,
     to: Point,
     type: Tools = Tools.rect
-): Shape => ({ id, type, from, to });
+): Shape => ({ id, type, from, to, rotation: 0 });
 
 const makeBBox = (from: Point, to: Point): BoundingBox => ({ from, to });
 
@@ -518,5 +528,231 @@ describe("getShapePath", () => {
             { method: "moveTo", args: [0, 0] },
             { method: "lineTo", args: [100, 200] },
         ]);
+    });
+});
+
+describe("getBoxCorners", () => {
+    test("returns corners in clockwise order", () => {
+        expect(
+            getBoxCorners(makeBBox({ x: 0, y: 0 }, { x: 100, y: 100 }))
+        ).toEqual([
+            { x: 0, y: 0 },
+            { x: 100, y: 0 },
+            { x: 100, y: 100 },
+            { x: 0, y: 100 },
+        ]);
+    });
+
+    test("uses the box coordinates as given without normalizing", () => {
+        expect(
+            getBoxCorners(makeBBox({ x: 100, y: 100 }, { x: 0, y: 0 }))
+        ).toEqual([
+            { x: 100, y: 100 },
+            { x: 0, y: 100 },
+            { x: 0, y: 0 },
+            { x: 100, y: 0 },
+        ]);
+    });
+});
+
+describe("getRotatedCorners", () => {
+    test("returns the unrotated corners when rotation is zero", () => {
+        expect(
+            getRotatedCorners(makeShape(1, { x: 0, y: 0 }, { x: 100, y: 100 }))
+        ).toEqual([
+            { x: 0, y: 0 },
+            { x: 100, y: 0 },
+            { x: 100, y: 100 },
+            { x: 0, y: 100 },
+        ]);
+    });
+
+    test("rotates the corners around the shape center", () => {
+        const rotated = getRotatedCorners({
+            ...makeShape(1, { x: 0, y: 0 }, { x: 100, y: 100 }),
+            rotation: Math.PI / 2,
+        });
+        expect(rotated[0].x).toBeCloseTo(100);
+        expect(rotated[0].y).toBeCloseTo(0);
+        expect(rotated[1].x).toBeCloseTo(100);
+        expect(rotated[1].y).toBeCloseTo(100);
+        expect(rotated[2].x).toBeCloseTo(0);
+        expect(rotated[2].y).toBeCloseTo(100);
+        expect(rotated[3].x).toBeCloseTo(0);
+        expect(rotated[3].y).toBeCloseTo(0);
+    });
+});
+
+describe("getShapeCenter", () => {
+    test("returns the midpoint of from and to", () => {
+        expect(
+            getShapeCenter(makeShape(1, { x: 0, y: 0 }, { x: 100, y: 50 }))
+        ).toEqual({ x: 50, y: 25 });
+    });
+
+    test("works when from and to are reversed", () => {
+        expect(
+            getShapeCenter(makeShape(1, { x: 100, y: 50 }, { x: 0, y: 0 }))
+        ).toEqual({ x: 50, y: 25 });
+    });
+});
+
+describe("rotatePoint", () => {
+    test("rotates a point 90 degrees counterclockwise", () => {
+        const point = rotatePoint({ x: 10, y: 0 }, { x: 0, y: 0 }, Math.PI / 2);
+        expect(point.x).toBeCloseTo(0);
+        expect(point.y).toBeCloseTo(10);
+    });
+
+    test("keeps a point on the center unchanged", () => {
+        expect(rotatePoint({ x: 5, y: 5 }, { x: 5, y: 5 }, Math.PI)).toEqual({
+            x: 5,
+            y: 5,
+        });
+    });
+
+    test("rotates around a non-origin center", () => {
+        const point = rotatePoint({ x: 10, y: 0 }, { x: 5, y: 0 }, Math.PI);
+        expect(point.x).toBeCloseTo(0);
+        expect(point.y).toBeCloseTo(0);
+    });
+});
+
+describe("getPointAngle", () => {
+    test("returns 0 for a point to the right of center", () => {
+        expect(getPointAngle({ x: 0, y: 0 }, { x: 1, y: 0 })).toBeCloseTo(0);
+    });
+
+    test("returns PI/2 for a point below center", () => {
+        expect(getPointAngle({ x: 0, y: 0 }, { x: 0, y: 1 })).toBeCloseTo(
+            Math.PI / 2
+        );
+    });
+
+    test("returns PI for a point to the left of center", () => {
+        expect(getPointAngle({ x: 0, y: 0 }, { x: -1, y: 0 })).toBeCloseTo(
+            Math.PI
+        );
+    });
+});
+
+describe("getRotateDeltaAngle", () => {
+    test("returns the clockwise angle between the two points", () => {
+        expect(
+            getRotateDeltaAngle({ x: 0, y: 0 }, { x: 1, y: 0 }, { x: 0, y: 1 })
+        ).toBeCloseTo(Math.PI / 2);
+    });
+});
+
+describe("getRotateHandle", () => {
+    test("places the handle above the top edge midpoint", () => {
+        expect(
+            getRotateHandle(makeBBox({ x: 0, y: 0 }, { x: 100, y: 50 }), 50)
+        ).toEqual({ x: 50, y: -50 });
+    });
+});
+
+describe("getFrameRotateHandle", () => {
+    test("places the handle above the frame for zero rotation", () => {
+        const corners = [
+            { x: 0, y: 0 },
+            { x: 100, y: 0 },
+            { x: 100, y: 100 },
+            { x: 0, y: 100 },
+        ];
+        expect(getFrameRotateHandle(corners, 0, 50)).toEqual({
+            x: 50,
+            y: -50,
+        });
+    });
+
+    test("offsets perpendicular to the rotated top edge", () => {
+        const corners = [
+            { x: 100, y: 0 },
+            { x: 100, y: 100 },
+            { x: 0, y: 100 },
+            { x: 0, y: 0 },
+        ];
+        const handle = getFrameRotateHandle(corners, Math.PI / 2, 50);
+        expect(handle.x).toBeCloseTo(150);
+        expect(handle.y).toBeCloseTo(50);
+    });
+});
+
+describe("getRotationCenter", () => {
+    test("returns the center of the union bounding box", () => {
+        expect(
+            getRotationCenter([
+                makeShape(1, { x: 0, y: 0 }, { x: 100, y: 100 }),
+                makeShape(2, { x: 200, y: 0 }, { x: 300, y: 100 }),
+            ])
+        ).toEqual({ x: 150, y: 50 });
+    });
+});
+
+describe("getBoundingBox with rotation", () => {
+    test("expands the box to cover the rotated corners", () => {
+        const shape = makeShape(1, { x: 0, y: 0 }, { x: 100, y: 50 });
+        const box = getBoundingBox({
+            ...shape,
+            rotation: Math.PI / 2,
+        });
+
+        expect(box.from.x).toBeCloseTo(25);
+        expect(box.from.y).toBeCloseTo(-25);
+        expect(box.to.x).toBeCloseTo(75);
+        expect(box.to.y).toBeCloseTo(75);
+    });
+});
+
+describe("rotateShapesFromCenter", () => {
+    test("rotates a single shape around the given center", () => {
+        const shape = makeShape(1, { x: 0, y: 0 }, { x: 100, y: 100 });
+        const result = rotateShapesFromCenter(
+            [shape],
+            { x: 0, y: 0 },
+            Math.PI / 2
+        )[0];
+
+        expect(result.from.x).toBeCloseTo(-100);
+        expect(result.from.y).toBeCloseTo(0);
+        expect(result.to.x).toBeCloseTo(0);
+        expect(result.to.y).toBeCloseTo(100);
+        expect(result.rotation).toBeCloseTo(Math.PI / 2);
+    });
+
+    test("rotates and translates multiple shapes together", () => {
+        const shapes = [
+            makeShape(1, { x: 0, y: 0 }, { x: 10, y: 10 }),
+            makeShape(2, { x: 20, y: 20 }, { x: 30, y: 30 }),
+        ];
+        const result = rotateShapesFromCenter(
+            shapes,
+            { x: 0, y: 0 },
+            Math.PI / 2
+        );
+
+        expect(result[0].from.x).toBeCloseTo(-10);
+        expect(result[0].from.y).toBeCloseTo(0);
+        expect(result[0].to.x).toBeCloseTo(0);
+        expect(result[0].to.y).toBeCloseTo(10);
+        expect(result[1].from.x).toBeCloseTo(-30);
+        expect(result[1].from.y).toBeCloseTo(20);
+        expect(result[1].to.x).toBeCloseTo(-20);
+        expect(result[1].to.y).toBeCloseTo(30);
+        expect(result.map(r => r.rotation)).toEqual([Math.PI / 2, Math.PI / 2]);
+    });
+
+    test("keeps a shape stationary when rotating around its own center", () => {
+        const shape = makeShape(1, { x: 0, y: 0 }, { x: 100, y: 100 });
+        const result = rotateShapesFromCenter(
+            [shape],
+            { x: 50, y: 50 },
+            Math.PI / 2
+        )[0];
+
+        expect(result.from).toEqual({ x: 0, y: 0 });
+        expect(result.to).toEqual({ x: 100, y: 100 });
+        expect(result.rotation).toBeCloseTo(Math.PI / 2);
     });
 });
