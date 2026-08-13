@@ -4,29 +4,32 @@ import { useCanvasStore } from "@stores/useCanvasStore";
 import {
     getBoundingBoxForShapes,
     getCornerHandles,
+    getRotateHandle,
     getShapePath,
     resizeShapesFromHandle,
 } from "@/utils/shapes";
-import type { Point, ResizeHandle, Shape } from "@/types";
+import type { Handles, Point, Shape } from "@/types";
 import { Tools } from "@/types";
 
 const HANDLE_SIZE = 8;
+const ROTATE_HANDLE_PADDING = 50;
 
-const RESIZE_CURSORS: Record<ResizeHandle, string> = {
+const HANDLES_CURSORS: Record<Handles, string> = {
     nw: "cursor-nwse-resize",
     ne: "cursor-nesw-resize",
     se: "cursor-nwse-resize",
     sw: "cursor-nesw-resize",
     from: "cursor-move",
     to: "cursor-move",
+    rotate: "cursor-grab",
 };
 
 export default function Canvas() {
     const canvasRef = useRef<HTMLCanvasElement | null>(null);
-    const [resizeHandle, setResizeHandle] = useState<ResizeHandle | null>(null);
+    const [currentHandle, setCurrentHandle] = useState<Handles | null>(null);
     const [isResizing, setIsResizing] = useState(false);
     const [resizeStart, setResizeStart] = useState<Shape[] | null>(null);
-    const [hoverHandle, setHoverHandle] = useState<ResizeHandle | null>(null);
+    const [hoverHandle, setHoverHandle] = useState<Handles | null>(null);
 
     const { tool } = useTool();
     const {
@@ -74,16 +77,18 @@ export default function Canvas() {
             selectedShapes[0].type === Tools.line);
 
     const selectionHandles = useMemo<Partial<
-        Record<ResizeHandle, Point>
-    > | null>(
-        () =>
-            selectedShapes.length === 0
-                ? null
-                : isSingleLineLike
-                  ? { from: selectedShapes[0].from, to: selectedShapes[0].to }
-                  : getCornerHandles(getBoundingBoxForShapes(selectedShapes)),
-        [selectedShapes, isSingleLineLike]
-    );
+        Record<Handles, Point>
+    > | null>(() => {
+        const box = getBoundingBoxForShapes(selectedShapes);
+        return selectedShapes.length === 0
+            ? null
+            : isSingleLineLike
+              ? { from: selectedShapes[0].from, to: selectedShapes[0].to }
+              : {
+                    ...getCornerHandles(box),
+                    rotate: getRotateHandle(box, ROTATE_HANDLE_PADDING),
+                };
+    }, [selectedShapes, isSingleLineLike]);
 
     const getPosCompareToWorld = useCallback(
         (x: number, y: number): Point => ({
@@ -94,13 +99,11 @@ export default function Canvas() {
     );
 
     const getHandleAt = useCallback(
-        (screenPos: Point): ResizeHandle | null => {
+        (screenPos: Point): Handles | null => {
             if (!selectionHandles) return null;
-            let closest: ResizeHandle | null = null;
+            let closest: Handles | null = null;
             let closestDist = HANDLE_SIZE;
-            for (const handle of Object.keys(
-                selectionHandles
-            ) as ResizeHandle[]) {
+            for (const handle of Object.keys(selectionHandles) as Handles[]) {
                 const world = selectionHandles[handle]!;
                 const sx = world.x * scale + offset.x;
                 const sy = world.y * scale + offset.y;
@@ -273,7 +276,11 @@ export default function Canvas() {
                 if (tool === Tools.select) {
                     const handleHit = getHandleAt(pos);
                     if (handleHit) {
-                        setResizeHandle(handleHit);
+                        if (handleHit === "rotate") {
+                            return;
+                        }
+
+                        setCurrentHandle(handleHit);
                         setIsResizing(true);
                         setResizeStart(selectedShapes);
                         return;
@@ -306,20 +313,20 @@ export default function Canvas() {
                 setStartWorldPos(cursorWorldPos);
             },
             [
-                tool,
                 getPosCompareToWorld,
-                getHandleAt,
-                hitTest,
                 setIsDragging,
                 setLastPos,
-                setIsPanning,
-                setSelectedIds,
-                toggleSelectedIds,
+                tool,
                 setStartWorldPos,
+                setIsPanning,
+                getHandleAt,
+                hitTest,
+                selectedShapes,
+                selectedIds,
+                toggleSelectedIds,
+                setSelectedIds,
                 setIsBoxSelecting,
                 setSelectionBox,
-                selectedIds,
-                selectedShapes,
             ]
         );
 
@@ -353,10 +360,15 @@ export default function Canvas() {
                     return;
                 }
 
-                if (isResizing && resizeHandle && resizeStart) {
+                if (
+                    isResizing &&
+                    currentHandle &&
+                    currentHandle !== "rotate" &&
+                    resizeStart
+                ) {
                     const resized = resizeShapesFromHandle(
                         resizeStart,
-                        resizeHandle,
+                        currentHandle,
                         endWorldPos
                     );
                     for (const { id, from, to } of resized) {
@@ -402,7 +414,7 @@ export default function Canvas() {
                 setStartWorldPos,
                 setCurrentShape,
                 isResizing,
-                resizeHandle,
+                currentHandle,
                 resizeStart,
                 updateShape,
             ]
@@ -472,7 +484,7 @@ export default function Canvas() {
 
         if (isResizing) {
             setIsResizing(false);
-            setResizeHandle(null);
+            setCurrentHandle(null);
             setResizeStart(null);
             setStartWorldPos(null);
             return;
@@ -524,7 +536,7 @@ export default function Canvas() {
     const getCursorClass = () => {
         if (tool === Tools.pan) return "cursor-grab";
         if (tool === Tools.select && hoverHandle) {
-            return RESIZE_CURSORS[hoverHandle];
+            return HANDLES_CURSORS[hoverHandle];
         }
         if (tool === Tools.select) return "";
         return "cursor-crosshair";

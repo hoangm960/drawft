@@ -23,10 +23,10 @@ export interface Shape {
     type: Tools;
     from: Point;
     to: Point;
+    rotation: number;
 }
 
 export type CornerHandle = "nw" | "ne" | "se" | "sw";
-
 export type EndpointHandle = "from" | "to";
-
 export type ResizeHandle = CornerHandle | EndpointHandle;
+export type Handles = ResizeHandle | "rotate";

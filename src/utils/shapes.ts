@@ -253,3 +253,14 @@ export const resizeShapesFromHandle = (
         },
     }));
 };
+
+export const getRotateHandle = (
+    box: BoundingBox,
+    topPadding: number
+): Point => {
+    const { minX, maxX, minY } = getBoundingBoxBounds(box);
+    const midX = (minX + maxX) / 2;
+    const rotateHandle = { x: midX, y: minY - topPadding };
+
+    return rotateHandle;
+};
