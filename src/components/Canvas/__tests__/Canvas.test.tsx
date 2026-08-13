@@ -500,7 +500,7 @@ describe("Canvas", () => {
         ]);
     });
 
-    test("pastes the clipboard with Ctrl+V and selects the pasted shape", () => {
+    test("pastes the clipboard at the cursor with Ctrl+V and selects the pasted shape", () => {
         useCanvasStore
             .getState()
             .addShape(makeShape(0, { x: 0, y: 0 }, { x: 100, y: 100 }));
@@ -508,6 +508,7 @@ describe("Canvas", () => {
         render(<Canvas />);
         fireEvent.keyDown(window, { key: "c", ctrlKey: true });
 
+        fireEvent.mouseMove(canvas(), { clientX: 200, clientY: 200 });
         fireEvent.keyDown(window, { key: "v", ctrlKey: true });
 
         const state = useCanvasStore.getState();
@@ -515,11 +516,28 @@ describe("Canvas", () => {
         expect(state.shapes.get(1)).toEqual({
             id: 1,
             type: Tools.rect,
-            from: { x: 10, y: 10 },
-            to: { x: 110, y: 110 },
+            from: { x: 150, y: 150 },
+            to: { x: 250, y: 250 },
             rotation: 0,
         });
         expect(state.selectedIds).toEqual([1]);
+    });
+
+    test("pastes at the viewport center when the cursor is unknown", () => {
+        useCanvasStore
+            .getState()
+            .addShape(makeShape(0, { x: 0, y: 0 }, { x: 100, y: 100 }));
+        useCanvasStore.getState().setSelectedIds([0]);
+        window.innerWidth = 400;
+        window.innerHeight = 300;
+        render(<Canvas />);
+        fireEvent.keyDown(window, { key: "c", ctrlKey: true });
+
+        fireEvent.keyDown(window, { key: "v", ctrlKey: true });
+
+        const state = useCanvasStore.getState();
+        expect(state.shapes.get(1)?.from).toEqual({ x: 150, y: 100 });
+        expect(state.shapes.get(1)?.to).toEqual({ x: 250, y: 200 });
     });
 
     test("duplicates the selected shape with Ctrl+D", () => {
@@ -551,11 +569,12 @@ describe("Canvas", () => {
         render(<Canvas />);
 
         fireEvent.keyDown(window, { key: "c", metaKey: true });
+        fireEvent.mouseMove(canvas(), { clientX: 200, clientY: 200 });
         fireEvent.keyDown(window, { key: "v", metaKey: true });
 
         const state = useCanvasStore.getState();
         expect(state.shapes.size).toEqual(2);
-        expect(state.shapes.get(1)?.from).toEqual({ x: 10, y: 10 });
+        expect(state.shapes.get(1)?.from).toEqual({ x: 150, y: 150 });
         expect(state.selectedIds).toEqual([1]);
     });
 

@@ -437,42 +437,54 @@ describe("useCanvasStore", () => {
     });
 
     describe("pasteShapes", () => {
-        test("pastes the clipboard offset by 10px and selects the pasted shapes", () => {
+        test("pastes the clipboard centered on the target and selects the pasted shapes", () => {
             store().addShape(makeShape(1, { x: 0, y: 0 }, { x: 10, y: 10 }));
             store().setSelectedIds([1]);
             store().copySelectedShapes();
 
-            store().pasteShapes();
+            store().pasteShapes({ x: 100, y: 100 });
 
             expect(store().shapes.size).toEqual(2);
             expect(store().shapes.get(2)).toEqual({
                 id: 2,
                 type: Tools.rect,
-                from: { x: 10, y: 10 },
-                to: { x: 20, y: 20 },
+                from: { x: 95, y: 95 },
+                to: { x: 105, y: 105 },
                 rotation: 0,
             });
             expect(store().selectedIds).toEqual([2]);
             expect(
                 store().shapeIndex.search({
-                    minX: 11,
-                    minY: 11,
-                    maxX: 19,
-                    maxY: 19,
+                    minX: 96,
+                    minY: 96,
+                    maxX: 104,
+                    maxY: 104,
                 })
-            ).toEqual([{ minX: 10, minY: 10, maxX: 20, maxY: 20, id: 2 }]);
+            ).toEqual([{ minX: 95, minY: 95, maxX: 105, maxY: 105, id: 2 }]);
         });
 
-        test("stacks repeated pastes by 10px from the clipboard origin", () => {
+        test("centers the whole selection on the target", () => {
+            store().addShape(makeShape(1, { x: 0, y: 0 }, { x: 10, y: 10 }));
+            store().addShape(makeShape(2, { x: 30, y: 30 }, { x: 40, y: 40 }));
+            store().setSelectedIds([1, 2]);
+            store().copySelectedShapes();
+
+            store().pasteShapes({ x: 100, y: 100 });
+
+            expect(store().shapes.get(3)?.from).toEqual({ x: 80, y: 80 });
+            expect(store().shapes.get(4)?.from).toEqual({ x: 110, y: 110 });
+        });
+
+        test("repeated pastes to the same target all center on it", () => {
             store().addShape(makeShape(1, { x: 0, y: 0 }, { x: 10, y: 10 }));
             store().setSelectedIds([1]);
             store().copySelectedShapes();
 
-            store().pasteShapes();
-            store().pasteShapes();
+            store().pasteShapes({ x: 100, y: 100 });
+            store().pasteShapes({ x: 100, y: 100 });
 
-            expect(store().shapes.get(2)?.from).toEqual({ x: 10, y: 10 });
-            expect(store().shapes.get(3)?.from).toEqual({ x: 20, y: 20 });
+            expect(store().shapes.get(2)?.from).toEqual({ x: 95, y: 95 });
+            expect(store().shapes.get(3)?.from).toEqual({ x: 95, y: 95 });
         });
 
         test("preserves the rotation of the pasted shape", () => {
@@ -481,7 +493,7 @@ describe("useCanvasStore", () => {
             store().setSelectedIds([1]);
             store().copySelectedShapes();
 
-            store().pasteShapes();
+            store().pasteShapes({ x: 100, y: 100 });
 
             expect(store().shapes.get(2)?.rotation).toBeCloseTo(Math.PI / 3);
         });
@@ -489,7 +501,7 @@ describe("useCanvasStore", () => {
         test("is a no-op when the clipboard is empty", () => {
             store().addShape(makeShape(1, { x: 0, y: 0 }, { x: 10, y: 10 }));
 
-            store().pasteShapes();
+            store().pasteShapes({ x: 100, y: 100 });
 
             expect(store().shapes.size).toEqual(1);
             expect(store().selectedIds).toEqual([]);
