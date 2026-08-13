@@ -10,6 +10,8 @@ import {
     getBoundingBoxForShapes,
     getCornerHandles,
     getShapePath,
+    resizeShapeFromHandle,
+    resizeShapesFromHandle,
     shapeIntersectsBox,
 } from "../shapes";
 
@@ -311,6 +313,158 @@ describe("getBoundingBoxForShapes", () => {
             from: { x: 0, y: 0 },
             to: { x: 0, y: 0 },
         });
+    });
+});
+
+describe("resizeShapeFromHandle", () => {
+    const rect = (): Shape => makeShape(1, { x: 0, y: 0 }, { x: 100, y: 100 });
+
+    test("se handle moves both max edges", () => {
+        expect(resizeShapeFromHandle(rect(), "se", { x: 150, y: 150 })).toEqual(
+            {
+                from: { x: 0, y: 0 },
+                to: { x: 150, y: 150 },
+            }
+        );
+    });
+
+    test("nw handle moves both min edges", () => {
+        expect(resizeShapeFromHandle(rect(), "nw", { x: -50, y: -50 })).toEqual(
+            {
+                from: { x: -50, y: -50 },
+                to: { x: 100, y: 100 },
+            }
+        );
+    });
+
+    test("moves the from endpoint when it holds the dragged edge", () => {
+        expect(
+            resizeShapeFromHandle(
+                makeShape(1, { x: 100, y: 100 }, { x: 0, y: 0 }),
+                "se",
+                { x: 150, y: 150 }
+            )
+        ).toEqual({
+            from: { x: 150, y: 150 },
+            to: { x: 0, y: 0 },
+        });
+    });
+
+    test("preserves arrow direction when resizing the tail corner", () => {
+        const arrow = makeShape(
+            1,
+            { x: 100, y: 0 },
+            { x: 0, y: 0 },
+            Tools.arrow
+        );
+
+        expect(resizeShapeFromHandle(arrow, "se", { x: 50, y: 0 })).toEqual({
+            from: { x: 50, y: 0 },
+            to: { x: 0, y: 0 },
+        });
+    });
+
+    test("preserves arrow direction when resizing the head corner", () => {
+        const arrow = makeShape(
+            1,
+            { x: 100, y: 0 },
+            { x: 0, y: 0 },
+            Tools.arrow
+        );
+
+        expect(resizeShapeFromHandle(arrow, "sw", { x: -50, y: 0 })).toEqual({
+            from: { x: 100, y: 0 },
+            to: { x: -50, y: 0 },
+        });
+    });
+});
+
+describe("resizeShapesFromHandle", () => {
+    test("from handle moves only the from endpoint", () => {
+        const arrow = makeShape(
+            1,
+            { x: 0, y: 0 },
+            { x: 100, y: 0 },
+            Tools.arrow
+        );
+
+        expect(
+            resizeShapesFromHandle([arrow], "from", { x: -50, y: 0 })
+        ).toEqual([
+            {
+                id: 1,
+                from: { x: -50, y: 0 },
+                to: { x: 100, y: 0 },
+            },
+        ]);
+    });
+
+    test("to handle moves only the to endpoint", () => {
+        const arrow = makeShape(
+            1,
+            { x: 0, y: 0 },
+            { x: 100, y: 0 },
+            Tools.arrow
+        );
+
+        expect(resizeShapesFromHandle([arrow], "to", { x: 150, y: 0 })).toEqual(
+            [
+                {
+                    id: 1,
+                    from: { x: 0, y: 0 },
+                    to: { x: 150, y: 0 },
+                },
+            ]
+        );
+    });
+
+    test("scales multiple shapes around the anchor corner", () => {
+        const shapes = [
+            makeShape(1, { x: 0, y: 0 }, { x: 100, y: 100 }),
+            makeShape(2, { x: 150, y: 150 }, { x: 200, y: 200 }),
+        ];
+
+        expect(
+            resizeShapesFromHandle(shapes, "se", { x: 300, y: 300 })
+        ).toEqual([
+            {
+                id: 1,
+                from: { x: 0, y: 0 },
+                to: { x: 150, y: 150 },
+            },
+            {
+                id: 2,
+                from: { x: 225, y: 225 },
+                to: { x: 300, y: 300 },
+            },
+        ]);
+    });
+
+    test("mirrors the selection when dragging past the anchor", () => {
+        const shapes = [makeShape(1, { x: 0, y: 0 }, { x: 100, y: 100 })];
+
+        expect(
+            resizeShapesFromHandle(shapes, "se", { x: -50, y: -50 })
+        ).toEqual([
+            {
+                id: 1,
+                from: { x: 0, y: 0 },
+                to: { x: -50, y: -50 },
+            },
+        ]);
+    });
+
+    test("keeps arrow direction when group-scaling", () => {
+        const shapes = [
+            makeShape(1, { x: 0, y: 0 }, { x: 100, y: 50 }, Tools.arrow),
+        ];
+
+        const resized = resizeShapesFromHandle(shapes, "se", {
+            x: 200,
+            y: 100,
+        });
+        expect(resized[0].from).toEqual({ x: 0, y: 0 });
+        expect(resized[0].to).toEqual({ x: 200, y: 100 });
     });
 });
 
