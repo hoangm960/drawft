@@ -1,8 +1,6 @@
 import { create } from "zustand";
 import { Tools } from "@/types";
 
-export { Tools };
-
 interface ToolState {
     tool: Tools;
 }
@@ -15,5 +13,5 @@ type UseToolStore = ToolState & ToolActions;
 
 export const useTool = create<UseToolStore>(set => ({
     tool: Tools.select,
-    setTool: (value: Tools) => set(state => ({ ...state, tool: value })),
+    setTool: (value: Tools) => set({ tool: value }),
 }));

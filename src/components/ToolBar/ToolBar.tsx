@@ -6,8 +6,9 @@ import DiamondIcon from "@assets/diamond.svg";
 import ArrowIcon from "@assets/arrow.svg";
 import PanIcon from "@assets/pan.svg";
 import CursorIcon from "@assets/cursor.svg";
-import { Tools, useTool } from "@stores/useToolStore";
+import { useTool } from "@stores/useToolStore";
 import { useCanvasStore } from "@stores/useCanvasStore";
+import { Tools } from "@/types";
 
 const TOOLS_CONFIG = [
     { tool: Tools.pan, icon: PanIcon, tooltip: "Pan" },

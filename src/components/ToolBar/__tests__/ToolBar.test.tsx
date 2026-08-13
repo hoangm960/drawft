@@ -1,7 +1,8 @@
 import { render, screen, fireEvent } from "@testing-library/react";
 import ToolBar from "../ToolBar";
-import { Tools, useTool } from "@stores/useToolStore";
+import { useTool } from "@stores/useToolStore";
 import { useCanvasStore } from "@stores/useCanvasStore";
+import { Tools } from "@/types";
 
 const TOOLTIPS = [
     "Pan",
