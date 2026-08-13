@@ -7,16 +7,57 @@ import type {
     ResizeHandle,
 } from "@/types";
 
-export const getBoundingBox = (shape: Shape): BoundingBox => ({
-    from: {
-        x: Math.min(shape.from.x, shape.to.x),
-        y: Math.min(shape.from.y, shape.to.y),
-    },
-    to: {
-        x: Math.max(shape.from.x, shape.to.x),
-        y: Math.max(shape.from.y, shape.to.y),
-    },
-});
+export const getBoxCorners = (box: BoundingBox): Point[] => [
+    { x: box.from.x, y: box.from.y },
+    { x: box.to.x, y: box.from.y },
+    { x: box.to.x, y: box.to.y },
+    { x: box.from.x, y: box.to.y },
+];
+
+export const getRotatedCorners = (shape: Shape): Point[] => {
+    const box = {
+        from: {
+            x: Math.min(shape.from.x, shape.to.x),
+            y: Math.min(shape.from.y, shape.to.y),
+        },
+        to: {
+            x: Math.max(shape.from.x, shape.to.x),
+            y: Math.max(shape.from.y, shape.to.y),
+        },
+    };
+    return getBoxCorners(box).map(point =>
+        rotatePoint(point, getShapeCenter(shape), shape.rotation)
+    );
+};
+
+export const getBoundingBox = (shape: Shape): BoundingBox => {
+    const box = {
+        from: {
+            x: Math.min(shape.from.x, shape.to.x),
+            y: Math.min(shape.from.y, shape.to.y),
+        },
+        to: {
+            x: Math.max(shape.from.x, shape.to.x),
+            y: Math.max(shape.from.y, shape.to.y),
+        },
+    };
+    if (shape.rotation === 0) return box;
+
+    const center = getShapeCenter(shape);
+    const corners = getBoxCorners(box).map(point =>
+        rotatePoint(point, center, shape.rotation)
+    );
+    return {
+        from: {
+            x: Math.min(...corners.map(c => c.x)),
+            y: Math.min(...corners.map(c => c.y)),
+        },
+        to: {
+            x: Math.max(...corners.map(c => c.x)),
+            y: Math.max(...corners.map(c => c.y)),
+        },
+    };
+};
 
 export const getBoundingBoxBounds = (box: BoundingBox) => ({
     minX: Math.min(box.from.x, box.to.x),
@@ -195,8 +236,15 @@ export const resizeShapeFromHandle = (
         endpoint[axis] = point[axis];
     }
 
-    return { from, to };
+    return { from: newFrom, to: newTo };
 };
+
+export const resizeShapeFromHandle = (
+    shape: Shape,
+    handle: CornerHandle,
+    point: Point
+): { from: Point; to: Point } =>
+    resizePoints(shape.from, shape.to, handle, point);
 
 export const resizeShapesFromHandle = (
     shapes: Shape[],
@@ -214,6 +262,18 @@ export const resizeShapesFromHandle = (
         ];
     }
 
+    if (shapes.length === 1 && shapes[0].rotation !== 0) {
+        const shape = shapes[0];
+        const center = getShapeCenter(shape);
+        const localPoint = rotatePoint(point, center, -shape.rotation);
+        return [
+            {
+                id: shape.id,
+                ...resizePoints(shape.from, shape.to, handle, localPoint),
+            },
+        ];
+    }
+
     const originalBox = getBoundingBoxForShapes(shapes);
     const originalBounds = getBoundingBoxBounds(originalBox);
     const newBox = resizeShapeFromHandle(
@@ -222,6 +282,7 @@ export const resizeShapesFromHandle = (
             type: Tools.rect,
             from: originalBox.from,
             to: originalBox.to,
+            rotation: 0,
         },
         handle,
         point
@@ -264,3 +325,67 @@ export const getRotateHandle = (
 
     return rotateHandle;
 };
+
+export const getFrameRotateHandle = (
+    corners: Point[],
+    angle: number,
+    topPadding: number
+): Point => {
+    const up = { x: Math.sin(angle), y: -Math.cos(angle) };
+    return {
+        x: (corners[0].x + corners[1].x) / 2 + up.x * topPadding,
+        y: (corners[0].y + corners[1].y) / 2 + up.y * topPadding,
+    };
+};
+
+export const getShapeCenter = (shape: Shape): Point => ({
+    x: (shape.from.x + shape.to.x) / 2,
+    y: (shape.from.y + shape.to.y) / 2,
+});
+
+export const rotatePoint = (
+    point: Point,
+    center: Point,
+    angle: number
+): Point => {
+    const cos = Math.cos(angle);
+    const sin = Math.sin(angle);
+    const dx = point.x - center.x;
+    const dy = point.y - center.y;
+    return {
+        x: center.x + dx * cos - dy * sin,
+        y: center.y + dx * sin + dy * cos,
+    };
+};
+
+export const getPointAngle = (center: Point, point: Point): number =>
+    Math.atan2(point.y - center.y, point.x - center.x);
+
+export const getRotateDeltaAngle = (
+    center: Point,
+    from: Point,
+    to: Point
+): number => getPointAngle(center, to) - getPointAngle(center, from);
+
+export const getRotationCenter = (shapes: Shape[]): Point => {
+    const box = getBoundingBoxForShapes(shapes);
+    return { x: (box.from.x + box.to.x) / 2, y: (box.from.y + box.to.y) / 2 };
+};
+
+export const rotateShapesFromCenter = (
+    shapes: Shape[],
+    center: Point,
+    angle: number
+): Array<{ id: number; from: Point; to: Point; rotation: number }> =>
+    shapes.map(shape => {
+        const shapeCenter = getShapeCenter(shape);
+        const rotatedCenter = rotatePoint(shapeCenter, center, angle);
+        const dx = rotatedCenter.x - shapeCenter.x;
+        const dy = rotatedCenter.y - shapeCenter.y;
+        return {
+            id: shape.id,
+            from: { x: shape.from.x + dx, y: shape.from.y + dy },
+            to: { x: shape.to.x + dx, y: shape.to.y + dy },
+            rotation: shape.rotation + angle,
+        };
+    });
