@@ -32,6 +32,7 @@ const HANDLES_CURSORS: Record<Handles, string> = {
 
 export default function Canvas() {
     const canvasRef = useRef<HTMLCanvasElement | null>(null);
+    const cursorWorldPosRef = useRef<Point | null>(null);
     const [currentHandle, setCurrentHandle] = useState<Handles | null>(null);
     const [isResizing, setIsResizing] = useState(false);
     const [isRotating, setIsRotating] = useState(false);
@@ -400,6 +401,7 @@ export default function Canvas() {
         useCallback(
             e => {
                 const pos = { x: e.clientX, y: e.clientY };
+                cursorWorldPosRef.current = getPosCompareToWorld(pos.x, pos.y);
 
                 if (!isDragging) {
                     setHoverHandle(
@@ -564,7 +566,13 @@ export default function Canvas() {
                     copySelectedShapes();
                     e.preventDefault();
                 } else if (key === "v") {
-                    pasteShapes();
+                    pasteShapes(
+                        cursorWorldPosRef.current ??
+                            getPosCompareToWorld(
+                                window.innerWidth / 2,
+                                window.innerHeight / 2
+                            )
+                    );
                     e.preventDefault();
                 } else if (key === "d") {
                     duplicateSelectedShapes();
@@ -582,6 +590,7 @@ export default function Canvas() {
         deleteShapes,
         duplicateSelectedShapes,
         pasteShapes,
+        getPosCompareToWorld,
     ]);
 
     useEffect(() => {

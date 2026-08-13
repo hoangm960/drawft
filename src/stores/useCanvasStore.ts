@@ -1,7 +1,11 @@
 import { create } from "zustand";
 import RBush from "rbush";
 import type { Shape, Point, BoundingBox } from "@/types";
-import { getBoundingBox, getBoundingBoxBounds } from "@/utils/shapes";
+import {
+    getBoundingBox,
+    getBoundingBoxBounds,
+    getBoundingBoxForShapes,
+} from "@/utils/shapes";
 
 const PASTE_OFFSET = 10;
 
@@ -35,7 +39,7 @@ interface CanvasActions {
     deleteShapes: (ids: number[]) => void;
     setClipboard: (shapes: Shape[]) => void;
     copySelectedShapes: () => void;
-    pasteShapes: () => void;
+    pasteShapes: (target: Point) => void;
     duplicateSelectedShapes: () => void;
     setCurrentShape: (shape: Shape | null) => void;
     setSelectedIds: (ids: number[]) => void;
@@ -174,15 +178,20 @@ export const useCanvasStore = create<CanvasState & CanvasActions>(
             });
         },
 
-        pasteShapes: () => {
+        pasteShapes: target => {
             const state = get();
             if (state.clipboard.length === 0) return;
 
+            const box = getBoundingBoxForShapes(state.clipboard);
+            const center = {
+                x: (box.from.x + box.to.x) / 2,
+                y: (box.from.y + box.to.y) / 2,
+            };
             const { shapes, ids } = cloneShapes(
                 state,
                 state.clipboard,
-                PASTE_OFFSET,
-                PASTE_OFFSET
+                target.x - center.x,
+                target.y - center.y
             );
             set({ shapes, selectedIds: ids });
         },
