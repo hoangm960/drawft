@@ -153,6 +153,113 @@ describe("Canvas", () => {
         expect(useCanvasStore.getState().selectedIds).toEqual([0]);
     });
 
+    test("resizes a selected shape by dragging a corner handle", () => {
+        useCanvasStore
+            .getState()
+            .addShape(makeShape(0, { x: 0, y: 0 }, { x: 100, y: 100 }));
+        useCanvasStore.getState().setSelectedIds([0]);
+        render(<Canvas />);
+
+        fireEvent.mouseDown(canvas(), { clientX: 100, clientY: 100 });
+        fireEvent.mouseMove(canvas(), { clientX: 150, clientY: 150 });
+        fireEvent.mouseUp(canvas());
+
+        expect(useCanvasStore.getState().shapes.get(0)).toEqual({
+            id: 0,
+            type: Tools.rect,
+            from: { x: 0, y: 0 },
+            to: { x: 150, y: 150 },
+        });
+    });
+
+    test("mirrors the shape when dragging a handle past the opposite edge", () => {
+        useCanvasStore
+            .getState()
+            .addShape(makeShape(0, { x: 0, y: 0 }, { x: 100, y: 100 }));
+        useCanvasStore.getState().setSelectedIds([0]);
+        render(<Canvas />);
+
+        fireEvent.mouseDown(canvas(), { clientX: 100, clientY: 100 });
+        fireEvent.mouseMove(canvas(), { clientX: -50, clientY: -50 });
+        fireEvent.mouseUp(canvas());
+
+        expect(useCanvasStore.getState().shapes.get(0)).toEqual({
+            id: 0,
+            type: Tools.rect,
+            from: { x: 0, y: 0 },
+            to: { x: -50, y: -50 },
+        });
+    });
+
+    test("keeps the dragged corner glued across multiple flips", () => {
+        useCanvasStore
+            .getState()
+            .addShape(makeShape(0, { x: 0, y: 0 }, { x: 100, y: 100 }));
+        useCanvasStore.getState().setSelectedIds([0]);
+        render(<Canvas />);
+
+        fireEvent.mouseDown(canvas(), { clientX: 100, clientY: 100 });
+        fireEvent.mouseMove(canvas(), { clientX: -50, clientY: -50 });
+        fireEvent.mouseMove(canvas(), { clientX: 80, clientY: 80 });
+        fireEvent.mouseUp(canvas());
+
+        expect(useCanvasStore.getState().shapes.get(0)).toEqual({
+            id: 0,
+            type: Tools.rect,
+            from: { x: 0, y: 0 },
+            to: { x: 80, y: 80 },
+        });
+    });
+
+    test("resizes an arrow from its to endpoint handle", () => {
+        useCanvasStore
+            .getState()
+            .addShape(
+                makeShape(0, { x: 0, y: 0 }, { x: 100, y: 0 }, Tools.arrow)
+            );
+        useCanvasStore.getState().setSelectedIds([0]);
+        render(<Canvas />);
+
+        fireEvent.mouseDown(canvas(), { clientX: 100, clientY: 0 });
+        fireEvent.mouseMove(canvas(), { clientX: 150, clientY: 0 });
+        fireEvent.mouseUp(canvas());
+
+        expect(useCanvasStore.getState().shapes.get(0)).toEqual({
+            id: 0,
+            type: Tools.arrow,
+            from: { x: 0, y: 0 },
+            to: { x: 150, y: 0 },
+        });
+    });
+
+    test("resizes multiple selected shapes as a group", () => {
+        useCanvasStore
+            .getState()
+            .addShape(makeShape(0, { x: 0, y: 0 }, { x: 100, y: 100 }));
+        useCanvasStore
+            .getState()
+            .addShape(makeShape(1, { x: 150, y: 150 }, { x: 200, y: 200 }));
+        useCanvasStore.getState().setSelectedIds([0, 1]);
+        render(<Canvas />);
+
+        fireEvent.mouseDown(canvas(), { clientX: 200, clientY: 200 });
+        fireEvent.mouseMove(canvas(), { clientX: 300, clientY: 300 });
+        fireEvent.mouseUp(canvas());
+
+        expect(useCanvasStore.getState().shapes.get(0)).toEqual({
+            id: 0,
+            type: Tools.rect,
+            from: { x: 0, y: 0 },
+            to: { x: 150, y: 150 },
+        });
+        expect(useCanvasStore.getState().shapes.get(1)).toEqual({
+            id: 1,
+            type: Tools.rect,
+            from: { x: 225, y: 225 },
+            to: { x: 300, y: 300 },
+        });
+    });
+
     test("deletes the selected shape with the Delete key", () => {
         useCanvasStore
             .getState()
