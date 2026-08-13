@@ -66,17 +66,6 @@ export const getBoundingBoxBounds = (box: BoundingBox) => ({
     maxY: Math.max(box.from.y, box.to.y),
 });
 
-export const shapeIntersectsBox = (shape: Shape, box: BoundingBox): boolean => {
-    const shapeBounds = getBoundingBoxBounds(getBoundingBox(shape));
-    const boxBounds = getBoundingBoxBounds(box);
-    return !(
-        shapeBounds.maxX < boxBounds.minX ||
-        shapeBounds.minX > boxBounds.maxX ||
-        shapeBounds.maxY < boxBounds.minY ||
-        shapeBounds.minY > boxBounds.maxY
-    );
-};
-
 export const getShapePath = (shape: Shape): Path2D => {
     const { type, from, to } = shape;
     const path = new Path2D();
@@ -163,19 +152,6 @@ export const drawArrow = (
 export const drawLine = (path: Path2D, from: Point, to: Point) => {
     path.moveTo(from.x, from.y);
     path.lineTo(to.x, to.y);
-};
-
-export const getCornerHandles = (
-    box: BoundingBox
-): Record<CornerHandle, Point> => {
-    const { minX, maxX, minY, maxY } = getBoundingBoxBounds(box);
-
-    return {
-        nw: { x: minX, y: minY },
-        ne: { x: maxX, y: minY },
-        se: { x: maxX, y: maxY },
-        sw: { x: minX, y: maxY },
-    };
 };
 
 export const getBoundingBoxForShapes = (shapes: Shape[]): BoundingBox => {
@@ -314,17 +290,6 @@ export const resizeShapesFromHandle = (
             y: anchor.y + (shape.to.y - anchor.y) * sy,
         },
     }));
-};
-
-export const getRotateHandle = (
-    box: BoundingBox,
-    topPadding: number
-): Point => {
-    const { minX, maxX, minY } = getBoundingBoxBounds(box);
-    const midX = (minX + maxX) / 2;
-    const rotateHandle = { x: midX, y: minY - topPadding };
-
-    return rotateHandle;
 };
 
 export const getFrameRotateHandle = (

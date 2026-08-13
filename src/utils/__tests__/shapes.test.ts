@@ -9,11 +9,9 @@ import {
     getBoundingBoxBounds,
     getBoundingBoxForShapes,
     getBoxCorners,
-    getCornerHandles,
     getFrameRotateHandle,
     getPointAngle,
     getRotateDeltaAngle,
-    getRotateHandle,
     getRotationCenter,
     getRotatedCorners,
     getShapeCenter,
@@ -22,7 +20,6 @@ import {
     resizeShapesFromHandle,
     rotatePoint,
     rotateShapesFromCenter,
-    shapeIntersectsBox,
 } from "../shapes";
 
 type PathCall = {
@@ -107,52 +104,6 @@ describe("getBoundingBoxBounds", () => {
             minY: 100,
             maxY: 300,
         });
-    });
-});
-
-describe("shapeIntersectsBox", () => {
-    const rect = makeShape(1, { x: 100, y: 100 }, { x: 200, y: 300 });
-
-    test("returns true when shape overlaps box", () => {
-        expect(
-            shapeIntersectsBox(
-                rect,
-                makeBBox({ x: 0, y: 0 }, { x: 110, y: 120 })
-            )
-        ).toBe(true);
-    });
-
-    test("returns false when shape does not overlap box", () => {
-        expect(
-            shapeIntersectsBox(rect, makeBBox({ x: 0, y: 0 }, { x: 90, y: 90 }))
-        ).toBe(false);
-    });
-
-    test("returns true when shape touches edge of box", () => {
-        expect(
-            shapeIntersectsBox(
-                rect,
-                makeBBox({ x: 0, y: 100 }, { x: 100, y: 100 })
-            )
-        ).toBe(true);
-    });
-
-    test("returns true when shape contains box", () => {
-        expect(
-            shapeIntersectsBox(
-                rect,
-                makeBBox({ x: 110, y: 110 }, { x: 190, y: 290 })
-            )
-        ).toBe(true);
-    });
-
-    test("returns true when shape is inside box", () => {
-        expect(
-            shapeIntersectsBox(
-                rect,
-                makeBBox({ x: 90, y: 90 }, { x: 210, y: 310 })
-            )
-        ).toBe(true);
     });
 });
 
@@ -273,30 +224,6 @@ describe("drawLine", () => {
             { method: "moveTo", args: [0, 0] },
             { method: "lineTo", args: [100, 200] },
         ]);
-    });
-});
-
-describe("getCornerHandles", () => {
-    test("returns corner handles around the box", () => {
-        expect(
-            getCornerHandles(makeBBox({ x: 0, y: 0 }, { x: 100, y: 100 }))
-        ).toEqual({
-            nw: { x: 0, y: 0 },
-            ne: { x: 100, y: 0 },
-            se: { x: 100, y: 100 },
-            sw: { x: 0, y: 100 },
-        });
-    });
-
-    test("normalizes when from > to", () => {
-        expect(
-            getCornerHandles(makeBBox({ x: 100, y: 100 }, { x: 0, y: 0 }))
-        ).toEqual({
-            nw: { x: 0, y: 0 },
-            ne: { x: 100, y: 0 },
-            se: { x: 100, y: 100 },
-            sw: { x: 0, y: 100 },
-        });
     });
 });
 
@@ -641,14 +568,6 @@ describe("getRotateDeltaAngle", () => {
         expect(
             getRotateDeltaAngle({ x: 0, y: 0 }, { x: 1, y: 0 }, { x: 0, y: 1 })
         ).toBeCloseTo(Math.PI / 2);
-    });
-});
-
-describe("getRotateHandle", () => {
-    test("places the handle above the top edge midpoint", () => {
-        expect(
-            getRotateHandle(makeBBox({ x: 0, y: 0 }, { x: 100, y: 50 }), 50)
-        ).toEqual({ x: 50, y: -50 });
     });
 });
 
