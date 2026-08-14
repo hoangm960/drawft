@@ -24,9 +24,14 @@ export interface Shape {
     from: Point;
     to: Point;
     rotation: number;
+    strokeWidth?: number;
+    strokeColor?: string;
+    strokePattern?: StrokePattern;
 }
 
 export type CornerHandle = "nw" | "ne" | "se" | "sw";
 export type EndpointHandle = "from" | "to";
 export type ResizeHandle = CornerHandle | EndpointHandle;
 export type Handles = ResizeHandle | "rotate";
+
+export type StrokePattern = "solid" | "dashed" | "dotted";

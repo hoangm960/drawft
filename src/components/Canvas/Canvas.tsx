@@ -11,6 +11,7 @@ import {
     getRotatedCorners,
     getShapeCenter,
     getShapePath,
+    getStrokeDashScaled,
     resizeShapesFromHandle,
     rotatePoint,
     rotateShapesFromCenter,
@@ -166,7 +167,7 @@ export default function Canvas() {
                 canvas.height / scale
             );
 
-            const drawShape = (shape: Shape, strokeStyle: string) => {
+            const drawShape = (shape: Shape) => {
                 const path = getShapePath(shape);
 
                 ctx.save();
@@ -176,23 +177,25 @@ export default function Canvas() {
                     ctx.rotate(shape.rotation);
                     ctx.translate(-center.x, -center.y);
                 }
-                ctx.strokeStyle = strokeStyle;
+                ctx.strokeStyle =
+                    shape.strokeColor ?? DEFAULT_STROKE.strokeColor;
                 ctx.fillStyle = "transparent";
-                ctx.lineWidth = 2 / scale;
+                ctx.lineWidth =
+                    (shape.strokeWidth ?? DEFAULT_STROKE.strokeWidth) / scale;
+                ctx.setLineDash(
+                    getStrokeDashScaled(shape.strokePattern, scale)
+                );
                 ctx.fill(path);
                 ctx.stroke(path);
                 ctx.restore();
             };
 
             shapes.forEach(shape => {
-                drawShape(
-                    shape,
-                    selectedIds.includes(shape.id) ? "purple" : "white"
-                );
+                drawShape(shape);
             });
 
             if (currentShape) {
-                drawShape(currentShape, "purple");
+                drawShape(currentShape);
             }
 
             if (selectionHandles) {
@@ -276,7 +279,6 @@ export default function Canvas() {
         [
             shapes,
             currentShape,
-            selectedIds,
             selectedShapes,
             selectionHandles,
             isSingleLineLike,

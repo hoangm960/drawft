@@ -5,7 +5,29 @@ import type {
     BoundingBox,
     CornerHandle,
     ResizeHandle,
+    StrokePattern,
 } from "@/types";
+
+export const DEFAULT_STROKE = {
+    strokeWidth: 2,
+    strokeColor: "#ffffff",
+    strokePattern: "solid",
+} as const;
+
+export const STROKE_PATTERNS: Record<StrokePattern, number[]> = {
+    solid: [],
+    dashed: [8, 8],
+    dotted: [2, 6],
+};
+
+export const getStrokeDash = (pattern: StrokePattern): number[] =>
+    STROKE_PATTERNS[pattern];
+
+export const getStrokeDashScaled = (
+    pattern: StrokePattern | undefined,
+    scale: number
+): number[] =>
+    getStrokeDash(pattern ?? DEFAULT_STROKE.strokePattern).map(v => v / scale);
 
 export const getBoxCorners = (box: BoundingBox): Point[] => [
     { x: box.from.x, y: box.from.y },

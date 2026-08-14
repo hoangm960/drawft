@@ -36,6 +36,7 @@ interface CanvasState {
 interface CanvasActions {
     addShape: (shape: Shape) => void;
     updateShape: (id: number, updates: Partial<Shape>) => void;
+    updateSelectedShapes: (updates: Partial<Shape>) => void;
     deleteShapes: (ids: number[]) => void;
     setClipboard: (shapes: Shape[]) => void;
     copySelectedShapes: () => void;
@@ -140,6 +141,24 @@ export const useCanvasStore = create<CanvasState & CanvasActions>(
 
             state.shapeIndex.remove(shapeBBox(shape), sameBBoxId);
             state.shapeIndex.insert(shapeBBox(updatedShape));
+
+            set({ shapes: newShapes });
+        },
+
+        updateSelectedShapes: updates => {
+            const state = get();
+            const newShapes = new Map(state.shapes);
+
+            for (const id of state.selectedIds) {
+                const shape = newShapes.get(id);
+                if (!shape) continue;
+
+                state.shapeIndex.remove(shapeBBox(shape), sameBBoxId);
+
+                const updatedShape = { ...shape, ...updates };
+                newShapes.set(id, updatedShape);
+                state.shapeIndex.insert(shapeBBox(updatedShape));
+            }
 
             set({ shapes: newShapes });
         },
