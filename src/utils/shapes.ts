@@ -6,17 +6,19 @@ import type {
     CornerHandle,
     ResizeHandle,
     StrokePattern,
+    StrokeStyle,
+    FillStyle,
 } from "@/types";
 
-export const DEFAULT_STROKE = {
+export const DEFAULT_STROKE: Required<StrokeStyle> = {
     strokeWidth: 2,
     strokeColor: "#ffffff",
     strokePattern: "solid",
-} as const;
+};
 
-export const DEFAULT_FILL = {
+export const DEFAULT_FILL: Required<FillStyle> = {
     fillColor: "transparent",
-} as const;
+};
 
 export const STROKE_PATTERNS: Record<StrokePattern, number[]> = {
     solid: [],

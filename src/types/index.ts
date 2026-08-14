@@ -18,17 +18,28 @@ export enum Tools {
     line = "line",
 }
 
-export interface Shape {
+interface BaseEntity {
     id: number;
     type: Tools;
+}
+
+interface Geometry {
     from: Point;
     to: Point;
     rotation: number;
+}
+
+export interface StrokeStyle {
     strokeWidth?: number;
     strokeColor?: string;
     strokePattern?: StrokePattern;
+}
+
+export interface FillStyle {
     fillColor?: string;
 }
+
+export interface Shape extends BaseEntity, Geometry, StrokeStyle, FillStyle {}
 
 export type CornerHandle = "nw" | "ne" | "se" | "sw";
 export type EndpointHandle = "from" | "to";
