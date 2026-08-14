@@ -1,10 +1,8 @@
 import SidebarButton from "./SidebarButton.tsx";
-import ColorIcon from "@assets/color.svg";
 import StrokeIcon from "@assets/stroke.svg";
 import FillIcon from "@assets/fill.svg";
 
 const PLACEHOLDER_ITEMS = [
-    { icon: ColorIcon, tooltip: "Color" },
     { icon: StrokeIcon, tooltip: "Stroke" },
     { icon: FillIcon, tooltip: "Fill" },
 ] as const;
