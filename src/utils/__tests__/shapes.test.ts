@@ -1,5 +1,7 @@
 import { Tools, type BoundingBox, type Point, type Shape } from "@/types";
 import {
+    DEFAULT_STROKE,
+    STROKE_PATTERNS,
     drawArrow,
     drawDiamond,
     drawEllipse,
@@ -16,6 +18,8 @@ import {
     getRotatedCorners,
     getShapeCenter,
     getShapePath,
+    getStrokeDash,
+    getStrokeDashScaled,
     resizeShapeFromHandle,
     resizeShapesFromHandle,
     rotatePoint,
@@ -673,5 +677,24 @@ describe("rotateShapesFromCenter", () => {
         expect(result.from).toEqual({ x: 0, y: 0 });
         expect(result.to).toEqual({ x: 100, y: 100 });
         expect(result.rotation).toBeCloseTo(Math.PI / 2);
+    });
+});
+
+describe("stroke helpers", () => {
+    test("maps every pattern to a dash array", () => {
+        expect(getStrokeDash("solid")).toEqual(STROKE_PATTERNS.solid);
+        expect(getStrokeDash("dashed")).toEqual([8, 8]);
+        expect(getStrokeDash("dotted")).toEqual([2, 6]);
+    });
+
+    test("scales dash lengths by the zoom scale", () => {
+        expect(getStrokeDashScaled("dashed", 2)).toEqual([4, 4]);
+        expect(getStrokeDashScaled("dotted", 0.5)).toEqual([4, 12]);
+    });
+
+    test("falls back to the default solid pattern when undefined", () => {
+        expect(getStrokeDashScaled(undefined, 1)).toEqual(
+            STROKE_PATTERNS[DEFAULT_STROKE.strokePattern]
+        );
     });
 });
