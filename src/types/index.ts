@@ -27,6 +27,7 @@ interface Geometry {
     from: Point;
     to: Point;
     rotation: number;
+    cornerRadius?: number;
 }
 
 export interface StrokeStyle {

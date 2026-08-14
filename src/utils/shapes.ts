@@ -20,6 +20,8 @@ export const DEFAULT_FILL: Required<FillStyle> = {
     fillColor: "transparent",
 };
 
+export const DEFAULT_CORNER_RADIUS = 0;
+
 export const STROKE_PATTERNS: Record<StrokePattern, number[]> = {
     solid: [],
     dashed: [8, 8],
@@ -100,10 +102,20 @@ export const getShapePath = (shape: Shape): Path2D => {
 
     switch (type) {
         case Tools.rect:
-            drawRectangle(path, from, to);
+            drawRectangle(
+                path,
+                from,
+                to,
+                shape.cornerRadius ?? DEFAULT_CORNER_RADIUS
+            );
             break;
         case Tools.dia:
-            drawDiamond(path, from, to);
+            drawDiamond(
+                path,
+                from,
+                to,
+                shape.cornerRadius ?? DEFAULT_CORNER_RADIUS
+            );
             break;
         case Tools.ellipse:
             drawEllipse(path, from, to);
@@ -118,16 +130,30 @@ export const getShapePath = (shape: Shape): Path2D => {
     return path;
 };
 
-export const drawRectangle = (path: Path2D, from: Point, to: Point) => {
-    path.rect(
-        Math.min(from.x, to.x),
-        Math.min(from.y, to.y),
-        Math.abs(to.x - from.x),
-        Math.abs(to.y - from.y)
-    );
+export const drawRectangle = (
+    path: Path2D,
+    from: Point,
+    to: Point,
+    radius = DEFAULT_CORNER_RADIUS
+) => {
+    const x = Math.min(from.x, to.x);
+    const y = Math.min(from.y, to.y);
+    const w = Math.abs(to.x - from.x);
+    const h = Math.abs(to.y - from.y);
+    const r = Math.min(Math.max(radius, 0), Math.min(w, h) / 2);
+    if (r > 0) {
+        path.roundRect(x, y, w, h, r);
+    } else {
+        path.rect(x, y, w, h);
+    }
 };
 
-export const drawDiamond = (path: Path2D, from: Point, to: Point) => {
+export const drawDiamond = (
+    path: Path2D,
+    from: Point,
+    to: Point,
+    radius = DEFAULT_CORNER_RADIUS
+) => {
     const minX = Math.min(from.x, to.x);
     const maxX = Math.max(from.x, to.x);
     const minY = Math.min(from.y, to.y);
@@ -135,11 +161,26 @@ export const drawDiamond = (path: Path2D, from: Point, to: Point) => {
     const midX = (minX + maxX) / 2;
     const midY = (minY + maxY) / 2;
 
-    path.moveTo(midX, minY);
-    path.lineTo(maxX, midY);
-    path.lineTo(midX, maxY);
-    path.lineTo(minX, midY);
-    path.closePath();
+    const halfW = (maxX - minX) / 2;
+    const halfH = (maxY - minY) / 2;
+    const edge = Math.hypot(halfW, halfH);
+    const r = Math.min(Math.max(radius, 0), edge / 2);
+
+    if (r > 0) {
+        const u = r / edge;
+        path.moveTo(midX - halfW * u, minY + halfH * u);
+        path.arcTo(midX, minY, midX + halfW * u, minY + halfH * u, r);
+        path.arcTo(maxX, midY, maxX - halfW * u, midY + halfH * u, r);
+        path.arcTo(midX, maxY, midX - halfW * u, maxY - halfH * u, r);
+        path.arcTo(minX, midY, minX + halfW * u, midY - halfH * u, r);
+        path.closePath();
+    } else {
+        path.moveTo(midX, minY);
+        path.lineTo(maxX, midY);
+        path.lineTo(midX, maxY);
+        path.lineTo(minX, midY);
+        path.closePath();
+    }
 };
 
 export const drawEllipse = (path: Path2D, from: Point, to: Point) => {
