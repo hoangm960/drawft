@@ -1,5 +1,5 @@
 import { render, screen, fireEvent } from "@testing-library/react";
-import StrokeSettings from "../StrokeSettings";
+import ShapeSettings from "../ShapeSettings";
 import { useCanvasStore } from "@stores/useCanvasStore";
 import { Tools, type Point, type Shape } from "@/types";
 
@@ -12,13 +12,13 @@ const makeShape = (
     >
 ): Shape => ({ id, type: Tools.rect, from, to, rotation: 0, ...stroke });
 
-describe("StrokeSettings", () => {
+describe("ShapeSettings", () => {
     beforeEach(() => {
         useCanvasStore.getState().reset();
     });
 
     test("shows a hint and disables controls when nothing is selected", () => {
-        render(<StrokeSettings />);
+        render(<ShapeSettings />);
 
         expect(screen.getByText("Select a shape")).toBeInTheDocument();
         expect(screen.getByLabelText("Stroke width")).toBeDisabled();
@@ -42,7 +42,7 @@ describe("StrokeSettings", () => {
         );
         store.setSelectedIds([1]);
 
-        render(<StrokeSettings />);
+        render(<ShapeSettings />);
 
         expect(screen.getByLabelText("Stroke width")).toHaveValue("6");
         expect(screen.getByLabelText("Stroke color")).toHaveValue("#00ff00");
@@ -56,7 +56,7 @@ describe("StrokeSettings", () => {
         store.addShape(makeShape(1, { x: 0, y: 0 }, { x: 10, y: 10 }));
         store.setSelectedIds([1]);
 
-        render(<StrokeSettings />);
+        render(<ShapeSettings />);
 
         fireEvent.change(screen.getByLabelText("Stroke width"), {
             target: { value: "8" },
@@ -70,7 +70,7 @@ describe("StrokeSettings", () => {
         store.addShape(makeShape(1, { x: 0, y: 0 }, { x: 10, y: 10 }));
         store.setSelectedIds([1]);
 
-        render(<StrokeSettings />);
+        render(<ShapeSettings />);
 
         fireEvent.click(screen.getByLabelText("Stroke pattern dashed"));
 
@@ -84,7 +84,7 @@ describe("StrokeSettings", () => {
         store.addShape(makeShape(1, { x: 0, y: 0 }, { x: 10, y: 10 }));
         store.setSelectedIds([1]);
 
-        render(<StrokeSettings />);
+        render(<ShapeSettings />);
 
         fireEvent.change(screen.getByLabelText("Stroke color"), {
             target: { value: "#ff0000" },
@@ -96,7 +96,7 @@ describe("StrokeSettings", () => {
     });
 
     test("does nothing when controls are used with no selection", () => {
-        render(<StrokeSettings />);
+        render(<ShapeSettings />);
 
         fireEvent.click(screen.getByLabelText("Stroke pattern dashed"));
         fireEvent.change(screen.getByLabelText("Stroke width"), {
@@ -107,7 +107,7 @@ describe("StrokeSettings", () => {
     });
 
     test("renders a button for every supported pattern", () => {
-        render(<StrokeSettings />);
+        render(<ShapeSettings />);
 
         for (const pattern of ["solid", "dashed", "dotted"]) {
             expect(

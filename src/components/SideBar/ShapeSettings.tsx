@@ -4,7 +4,7 @@ import type { Shape, StrokePattern } from "@/types";
 
 const PATTERNS: StrokePattern[] = ["solid", "dashed", "dotted"];
 
-export default function StrokeSettings() {
+export default function ShapeSettings() {
     const { shapes, selectedIds, updateSelectedShapes } = useCanvasStore();
 
     const selectedShape: Shape | undefined = selectedIds
