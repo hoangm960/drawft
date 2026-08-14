@@ -8,6 +8,14 @@ class MockPath2D {
         this.calls.push({ method: "rect", args: [x, y, w, h] });
     }
 
+    roundRect(x: number, y: number, w: number, h: number, radius: number) {
+        this.calls.push({ method: "roundRect", args: [x, y, w, h, radius] });
+    }
+
+    arcTo(x1: number, y1: number, x2: number, y2: number, radius: number) {
+        this.calls.push({ method: "arcTo", args: [x1, y1, x2, y2, radius] });
+    }
+
     ellipse(
         x: number,
         y: number,

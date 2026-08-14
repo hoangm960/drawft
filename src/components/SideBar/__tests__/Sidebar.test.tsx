@@ -1,6 +1,14 @@
 import { render, screen } from "@testing-library/react";
 import Sidebar from "../Sidebar";
 import { useCanvasStore } from "@stores/useCanvasStore";
+import { Tools, type Point, type Shape } from "@/types";
+
+const makeShape = (
+    id: number,
+    from: Point,
+    to: Point,
+    type: Tools = Tools.rect
+): Shape => ({ id, type, from, to, rotation: 0 });
 
 describe("Sidebar", () => {
     beforeEach(() => {
@@ -33,5 +41,29 @@ describe("Sidebar", () => {
         expect(screen.getByText("Select a shape")).toBeInTheDocument();
         expect(screen.getByLabelText("Stroke width")).toBeDisabled();
         expect(screen.getByLabelText("Fill color")).toBeDisabled();
+    });
+
+    test("shows the corner radius control when a rect is selected", () => {
+        const store = useCanvasStore.getState();
+        store.addShape(makeShape(1, { x: 0, y: 0 }, { x: 10, y: 10 }));
+        store.setSelectedIds([1]);
+
+        render(<Sidebar />);
+
+        expect(screen.getByLabelText("Corner radius")).toBeInTheDocument();
+    });
+
+    test("hides the corner radius control when a line is selected", () => {
+        const store = useCanvasStore.getState();
+        store.addShape(
+            makeShape(1, { x: 0, y: 0 }, { x: 10, y: 10 }, Tools.line)
+        );
+        store.setSelectedIds([1]);
+
+        render(<Sidebar />);
+
+        expect(
+            screen.queryByLabelText("Corner radius")
+        ).not.toBeInTheDocument();
     });
 });

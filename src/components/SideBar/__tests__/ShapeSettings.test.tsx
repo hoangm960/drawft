@@ -7,13 +7,18 @@ const makeShape = (
     id: number,
     from: Point,
     to: Point,
+    type: Tools = Tools.rect,
     props?: Partial<
         Pick<
             Shape,
-            "strokeWidth" | "strokeColor" | "strokePattern" | "fillColor"
+            | "strokeWidth"
+            | "strokeColor"
+            | "strokePattern"
+            | "fillColor"
+            | "cornerRadius"
         >
     >
-): Shape => ({ id, type: Tools.rect, from, to, rotation: 0, ...props });
+): Shape => ({ id, type, from, to, rotation: 0, ...props });
 
 describe("ShapeSettings", () => {
     beforeEach(() => {
@@ -29,21 +34,19 @@ describe("ShapeSettings", () => {
         expect(screen.getByLabelText("Stroke pattern solid")).toBeDisabled();
         expect(screen.getByLabelText("Fill color")).toBeDisabled();
         expect(screen.getByLabelText("No fill")).toBeDisabled();
+        expect(
+            screen.queryByLabelText("Corner radius")
+        ).not.toBeInTheDocument();
     });
 
     test("seeds the controls from the selected shape's stroke values", () => {
         const store = useCanvasStore.getState();
         store.addShape(
-            makeShape(
-                1,
-                { x: 0, y: 0 },
-                { x: 10, y: 10 },
-                {
-                    strokeWidth: 6,
-                    strokeColor: "#00ff00",
-                    strokePattern: "dotted",
-                }
-            )
+            makeShape(1, { x: 0, y: 0 }, { x: 10, y: 10 }, Tools.rect, {
+                strokeWidth: 6,
+                strokeColor: "#00ff00",
+                strokePattern: "dotted",
+            })
         );
         store.setSelectedIds([1]);
 
@@ -134,12 +137,9 @@ describe("ShapeSettings", () => {
     test("seeds the fill color from the selected shape", () => {
         const store = useCanvasStore.getState();
         store.addShape(
-            makeShape(
-                1,
-                { x: 0, y: 0 },
-                { x: 10, y: 10 },
-                { fillColor: "#ff0000" }
-            )
+            makeShape(1, { x: 0, y: 0 }, { x: 10, y: 10 }, Tools.rect, {
+                fillColor: "#ff0000",
+            })
         );
         store.setSelectedIds([1]);
 
@@ -168,12 +168,9 @@ describe("ShapeSettings", () => {
     test("clears the fill when clicking None", () => {
         const store = useCanvasStore.getState();
         store.addShape(
-            makeShape(
-                1,
-                { x: 0, y: 0 },
-                { x: 10, y: 10 },
-                { fillColor: "#ff0000" }
-            )
+            makeShape(1, { x: 0, y: 0 }, { x: 10, y: 10 }, Tools.rect, {
+                fillColor: "#ff0000",
+            })
         );
         store.setSelectedIds([1]);
 
@@ -184,5 +181,76 @@ describe("ShapeSettings", () => {
         expect(
             useCanvasStore.getState().shapes.get(1)?.fillColor
         ).toBeUndefined();
+    });
+
+    test("seeds the corner radius from a selected rect", () => {
+        const store = useCanvasStore.getState();
+        store.addShape(
+            makeShape(1, { x: 0, y: 0 }, { x: 10, y: 10 }, Tools.rect, {
+                cornerRadius: 12,
+            })
+        );
+        store.setSelectedIds([1]);
+
+        render(<ShapeSettings />);
+
+        expect(screen.getByLabelText("Corner radius")).toHaveValue("12");
+    });
+
+    test("shows the corner radius control for a selected diamond", () => {
+        const store = useCanvasStore.getState();
+        store.addShape(
+            makeShape(1, { x: 0, y: 0 }, { x: 10, y: 10 }, Tools.dia)
+        );
+        store.setSelectedIds([1]);
+
+        render(<ShapeSettings />);
+
+        expect(screen.getByLabelText("Corner radius")).toBeInTheDocument();
+    });
+
+    test("hides the corner radius control for a selected line", () => {
+        const store = useCanvasStore.getState();
+        store.addShape(
+            makeShape(1, { x: 0, y: 0 }, { x: 10, y: 10 }, Tools.line)
+        );
+        store.setSelectedIds([1]);
+
+        render(<ShapeSettings />);
+
+        expect(
+            screen.queryByLabelText("Corner radius")
+        ).not.toBeInTheDocument();
+    });
+
+    test("hides the corner radius control when the selection mixes shapes", () => {
+        const store = useCanvasStore.getState();
+        store.addShape(makeShape(1, { x: 0, y: 0 }, { x: 10, y: 10 }));
+        store.addShape(
+            makeShape(2, { x: 20, y: 0 }, { x: 30, y: 10 }, Tools.line)
+        );
+        store.setSelectedIds([1, 2]);
+
+        render(<ShapeSettings />);
+
+        expect(
+            screen.queryByLabelText("Corner radius")
+        ).not.toBeInTheDocument();
+    });
+
+    test("applies the corner radius change to the selection", () => {
+        const store = useCanvasStore.getState();
+        store.addShape(makeShape(1, { x: 0, y: 0 }, { x: 10, y: 10 }));
+        store.setSelectedIds([1]);
+
+        render(<ShapeSettings />);
+
+        fireEvent.change(screen.getByLabelText("Corner radius"), {
+            target: { value: "25" },
+        });
+
+        expect(useCanvasStore.getState().shapes.get(1)?.cornerRadius).toEqual(
+            25
+        );
     });
 });

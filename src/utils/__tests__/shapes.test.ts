@@ -114,7 +114,7 @@ describe("getBoundingBoxBounds", () => {
 describe("drawRectangle", () => {
     test("draws rect with normalized origin and size", () => {
         const path = new Path2D();
-        drawRectangle(path, { x: 100, y: 100 }, { x: 200, y: 300 });
+        drawRectangle(path, { x: 100, y: 100 }, { x: 200, y: 300 }, 0);
         expect(getCalls(path)).toEqual([
             { method: "rect", args: [100, 100, 100, 200] },
         ]);
@@ -122,9 +122,41 @@ describe("drawRectangle", () => {
 
     test("normalizes origin and size when from > to", () => {
         const path = new Path2D();
-        drawRectangle(path, { x: 200, y: 300 }, { x: 100, y: 100 });
+        drawRectangle(path, { x: 200, y: 300 }, { x: 100, y: 100 }, 0);
         expect(getCalls(path)).toEqual([
             { method: "rect", args: [100, 100, 100, 200] },
+        ]);
+    });
+
+    test("uses the default corner radius when none is given", () => {
+        const path = new Path2D();
+        drawRectangle(path, { x: 0, y: 0 }, { x: 100, y: 200 });
+        expect(getCalls(path)).toEqual([
+            { method: "roundRect", args: [0, 0, 100, 200, 20] },
+        ]);
+    });
+
+    test("rounds corners with roundRect when a radius is given", () => {
+        const path = new Path2D();
+        drawRectangle(path, { x: 100, y: 100 }, { x: 200, y: 300 }, 10);
+        expect(getCalls(path)).toEqual([
+            { method: "roundRect", args: [100, 100, 100, 200, 10] },
+        ]);
+    });
+
+    test("clamps the radius to half the smallest side", () => {
+        const path = new Path2D();
+        drawRectangle(path, { x: 0, y: 0 }, { x: 100, y: 200 }, 100);
+        expect(getCalls(path)).toEqual([
+            { method: "roundRect", args: [0, 0, 100, 200, 50] },
+        ]);
+    });
+
+    test("treats a negative radius as no rounding", () => {
+        const path = new Path2D();
+        drawRectangle(path, { x: 0, y: 0 }, { x: 100, y: 200 }, -5);
+        expect(getCalls(path)).toEqual([
+            { method: "rect", args: [0, 0, 100, 200] },
         ]);
     });
 });
@@ -132,7 +164,7 @@ describe("drawRectangle", () => {
 describe("drawDiamond", () => {
     test("draws diamond using midpoints", () => {
         const path = new Path2D();
-        drawDiamond(path, { x: 0, y: 0 }, { x: 100, y: 100 });
+        drawDiamond(path, { x: 0, y: 0 }, { x: 100, y: 100 }, 0);
         expect(getCalls(path)).toEqual([
             { method: "moveTo", args: [50, 0] },
             { method: "lineTo", args: [100, 50] },
@@ -144,7 +176,45 @@ describe("drawDiamond", () => {
 
     test("draws diamond when from > to", () => {
         const path = new Path2D();
-        drawDiamond(path, { x: 100, y: 100 }, { x: 0, y: 0 });
+        drawDiamond(path, { x: 100, y: 100 }, { x: 0, y: 0 }, 0);
+        expect(getCalls(path)).toEqual([
+            { method: "moveTo", args: [50, 0] },
+            { method: "lineTo", args: [100, 50] },
+            { method: "lineTo", args: [50, 100] },
+            { method: "lineTo", args: [0, 50] },
+            { method: "closePath", args: [] },
+        ]);
+    });
+
+    test("rounds corners with arcTo when a radius is given", () => {
+        const path = new Path2D();
+        drawDiamond(path, { x: 0, y: 0 }, { x: 100, y: 100 }, 10);
+        const edge = Math.hypot(50, 50);
+        const u = 10 / edge;
+        expect(getCalls(path)).toEqual([
+            { method: "moveTo", args: [50 - 50 * u, 50 * u] },
+            { method: "arcTo", args: [50, 0, 50 + 50 * u, 50 * u, 10] },
+            { method: "arcTo", args: [100, 50, 100 - 50 * u, 50 + 50 * u, 10] },
+            { method: "arcTo", args: [50, 100, 50 - 50 * u, 100 - 50 * u, 10] },
+            { method: "arcTo", args: [0, 50, 50 * u, 50 - 50 * u, 10] },
+            { method: "closePath", args: [] },
+        ]);
+    });
+
+    test("clamps the radius to half an edge", () => {
+        const path = new Path2D();
+        drawDiamond(path, { x: 0, y: 0 }, { x: 100, y: 100 }, 100);
+        const r = Math.hypot(50, 50) / 2;
+        const arcToCalls = getCalls(path).filter(c => c.method === "arcTo");
+        expect(arcToCalls).toHaveLength(4);
+        for (const call of arcToCalls) {
+            expect(call.args[4]).toBeCloseTo(r);
+        }
+    });
+
+    test("treats a negative radius as no rounding", () => {
+        const path = new Path2D();
+        drawDiamond(path, { x: 0, y: 0 }, { x: 100, y: 100 }, -5);
         expect(getCalls(path)).toEqual([
             { method: "moveTo", args: [50, 0] },
             { method: "lineTo", args: [100, 50] },
@@ -418,18 +488,50 @@ describe("getShapePath", () => {
     });
 
     test("dispatches rect to drawRectangle", () => {
-        const path = getShapePath(
-            makeShape(1, { x: 0, y: 0 }, { x: 10, y: 10 })
-        );
+        const path = getShapePath({
+            ...makeShape(1, { x: 0, y: 0 }, { x: 10, y: 10 }),
+            cornerRadius: 0,
+        });
         expect(getCalls(path)).toEqual([
             { method: "rect", args: [0, 0, 10, 10] },
         ]);
     });
 
-    test("dispatches dia to drawDiamond", () => {
+    test("applies the default corner radius to a rect", () => {
         const path = getShapePath(
-            makeShape(1, { x: 0, y: 0 }, { x: 100, y: 100 }, Tools.dia)
+            makeShape(1, { x: 0, y: 0 }, { x: 100, y: 200 })
         );
+        expect(getCalls(path)).toEqual([
+            { method: "roundRect", args: [0, 0, 100, 200, 20] },
+        ]);
+    });
+
+    test("forwards cornerRadius to drawRectangle", () => {
+        const path = getShapePath({
+            ...makeShape(1, { x: 0, y: 0 }, { x: 10, y: 10 }),
+            cornerRadius: 5,
+        });
+        expect(getCalls(path)).toEqual([
+            { method: "roundRect", args: [0, 0, 10, 10, 5] },
+        ]);
+    });
+
+    test("forwards cornerRadius to drawDiamond", () => {
+        const path = getShapePath({
+            ...makeShape(1, { x: 0, y: 0 }, { x: 100, y: 100 }, Tools.dia),
+            cornerRadius: 10,
+        });
+        const calls = getCalls(path);
+        expect(calls[0].method).toBe("moveTo");
+        expect(calls.filter(c => c.method === "arcTo")).toHaveLength(4);
+        expect(calls.at(-1)).toEqual({ method: "closePath", args: [] });
+    });
+
+    test("dispatches dia to drawDiamond", () => {
+        const path = getShapePath({
+            ...makeShape(1, { x: 0, y: 0 }, { x: 100, y: 100 }, Tools.dia),
+            cornerRadius: 0,
+        });
         expect(getCalls(path)[0]).toEqual({ method: "moveTo", args: [50, 0] });
         expect(getCalls(path)[4]).toEqual({ method: "closePath", args: [] });
     });
