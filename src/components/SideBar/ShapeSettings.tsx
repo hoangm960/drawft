@@ -15,6 +15,7 @@ export default function ShapeSettings() {
     const color = selectedShape?.strokeColor ?? DEFAULT_STROKE.strokeColor;
     const pattern =
         selectedShape?.strokePattern ?? DEFAULT_STROKE.strokePattern;
+    const fillColor = selectedShape?.fillColor;
 
     const isDisabled = selectedIds.length === 0;
 
@@ -84,6 +85,32 @@ export default function ShapeSettings() {
                         }
                     />
                 </div>
+            </div>
+
+            <span className="text-xs text-gray-300">Fill</span>
+
+            <div
+                className={`flex items-center gap-2 ${isDisabled ? "opacity-50" : ""}`}>
+                <input
+                    type="color"
+                    value={fillColor ?? "#ffffff"}
+                    disabled={isDisabled}
+                    aria-label="Fill color"
+                    className="h-8 w-full cursor-pointer rounded-md bg-gray-700 p-1"
+                    onChange={e =>
+                        updateSelectedShapes({ fillColor: e.target.value })
+                    }
+                />
+                <button
+                    type="button"
+                    disabled={isDisabled}
+                    aria-label="No fill"
+                    className={`shrink-0 px-2 py-1 text-xs rounded-md capitalize ${fillColor ? "bg-gray-700 text-gray-300" : "bg-gray-500 text-white"}`}
+                    onClick={() =>
+                        updateSelectedShapes({ fillColor: undefined })
+                    }>
+                    None
+                </button>
             </div>
         </div>
     );
