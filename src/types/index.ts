@@ -27,6 +27,7 @@ export interface Shape {
     strokeWidth?: number;
     strokeColor?: string;
     strokePattern?: StrokePattern;
+    fillColor?: string;
 }
 
 export type CornerHandle = "nw" | "ne" | "se" | "sw";

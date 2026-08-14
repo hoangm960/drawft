@@ -14,6 +14,10 @@ export const DEFAULT_STROKE = {
     strokePattern: "solid",
 } as const;
 
+export const DEFAULT_FILL = {
+    fillColor: "transparent",
+} as const;
+
 export const STROKE_PATTERNS: Record<StrokePattern, number[]> = {
     solid: [],
     dashed: [8, 8],

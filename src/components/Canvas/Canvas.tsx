@@ -2,6 +2,7 @@ import { useRef, useCallback, useEffect, useMemo, useState } from "react";
 import { useTool } from "@stores/useToolStore";
 import { useCanvasStore } from "@stores/useCanvasStore";
 import {
+    DEFAULT_FILL,
     DEFAULT_STROKE,
     getBoundingBoxForShapes,
     getBoxCorners,
@@ -179,7 +180,7 @@ export default function Canvas() {
                 }
                 ctx.strokeStyle =
                     shape.strokeColor ?? DEFAULT_STROKE.strokeColor;
-                ctx.fillStyle = "transparent";
+                ctx.fillStyle = shape.fillColor ?? DEFAULT_FILL.fillColor;
                 ctx.lineWidth =
                     (shape.strokeWidth ?? DEFAULT_STROKE.strokeWidth) / scale;
                 ctx.setLineDash(
