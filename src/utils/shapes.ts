@@ -20,7 +20,7 @@ export const DEFAULT_FILL: Required<FillStyle> = {
     fillColor: "transparent",
 };
 
-export const DEFAULT_CORNER_RADIUS = 0;
+export const DEFAULT_CORNER_RADIUS = 20;
 
 export const STROKE_PATTERNS: Record<StrokePattern, number[]> = {
     solid: [],
