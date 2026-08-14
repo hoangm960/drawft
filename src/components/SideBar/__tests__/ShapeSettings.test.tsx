@@ -7,10 +7,13 @@ const makeShape = (
     id: number,
     from: Point,
     to: Point,
-    stroke?: Partial<
-        Pick<Shape, "strokeWidth" | "strokeColor" | "strokePattern">
+    props?: Partial<
+        Pick<
+            Shape,
+            "strokeWidth" | "strokeColor" | "strokePattern" | "fillColor"
+        >
     >
-): Shape => ({ id, type: Tools.rect, from, to, rotation: 0, ...stroke });
+): Shape => ({ id, type: Tools.rect, from, to, rotation: 0, ...props });
 
 describe("ShapeSettings", () => {
     beforeEach(() => {
@@ -24,6 +27,8 @@ describe("ShapeSettings", () => {
         expect(screen.getByLabelText("Stroke width")).toBeDisabled();
         expect(screen.getByLabelText("Stroke color")).toBeDisabled();
         expect(screen.getByLabelText("Stroke pattern solid")).toBeDisabled();
+        expect(screen.getByLabelText("Fill color")).toBeDisabled();
+        expect(screen.getByLabelText("No fill")).toBeDisabled();
     });
 
     test("seeds the controls from the selected shape's stroke values", () => {
@@ -114,5 +119,70 @@ describe("ShapeSettings", () => {
                 screen.getByLabelText(`Stroke pattern ${pattern}`)
             ).toBeInTheDocument();
         }
+    });
+
+    test("shows None active when the selected shape has no fill", () => {
+        const store = useCanvasStore.getState();
+        store.addShape(makeShape(1, { x: 0, y: 0 }, { x: 10, y: 10 }));
+        store.setSelectedIds([1]);
+
+        render(<ShapeSettings />);
+
+        expect(screen.getByLabelText("No fill")).toHaveClass("bg-gray-500");
+    });
+
+    test("seeds the fill color from the selected shape", () => {
+        const store = useCanvasStore.getState();
+        store.addShape(
+            makeShape(
+                1,
+                { x: 0, y: 0 },
+                { x: 10, y: 10 },
+                { fillColor: "#ff0000" }
+            )
+        );
+        store.setSelectedIds([1]);
+
+        render(<ShapeSettings />);
+
+        expect(screen.getByLabelText("Fill color")).toHaveValue("#ff0000");
+        expect(screen.getByLabelText("No fill")).toHaveClass("bg-gray-700");
+    });
+
+    test("applies the fill color change to the selection", () => {
+        const store = useCanvasStore.getState();
+        store.addShape(makeShape(1, { x: 0, y: 0 }, { x: 10, y: 10 }));
+        store.setSelectedIds([1]);
+
+        render(<ShapeSettings />);
+
+        fireEvent.change(screen.getByLabelText("Fill color"), {
+            target: { value: "#0000ff" },
+        });
+
+        expect(useCanvasStore.getState().shapes.get(1)?.fillColor).toEqual(
+            "#0000ff"
+        );
+    });
+
+    test("clears the fill when clicking None", () => {
+        const store = useCanvasStore.getState();
+        store.addShape(
+            makeShape(
+                1,
+                { x: 0, y: 0 },
+                { x: 10, y: 10 },
+                { fillColor: "#ff0000" }
+            )
+        );
+        store.setSelectedIds([1]);
+
+        render(<ShapeSettings />);
+
+        fireEvent.click(screen.getByLabelText("No fill"));
+
+        expect(
+            useCanvasStore.getState().shapes.get(1)?.fillColor
+        ).toBeUndefined();
     });
 });

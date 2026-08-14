@@ -7,7 +7,7 @@ describe("Sidebar", () => {
         useCanvasStore.getState().reset();
     });
 
-    test("renders the stroke settings inline without a toggle", () => {
+    test("renders the shape settings inline without a toggle", () => {
         render(<Sidebar />);
 
         expect(screen.getByText("Stroke")).toBeInTheDocument();
@@ -16,6 +16,9 @@ describe("Sidebar", () => {
         expect(
             screen.getByLabelText("Stroke pattern solid")
         ).toBeInTheDocument();
+        expect(screen.getByText("Fill")).toBeInTheDocument();
+        expect(screen.getByLabelText("Fill color")).toBeInTheDocument();
+        expect(screen.getByLabelText("No fill")).toBeInTheDocument();
     });
 
     test("does not render a Fill button", () => {
@@ -29,5 +32,6 @@ describe("Sidebar", () => {
 
         expect(screen.getByText("Select a shape")).toBeInTheDocument();
         expect(screen.getByLabelText("Stroke width")).toBeDisabled();
+        expect(screen.getByLabelText("Fill color")).toBeDisabled();
     });
 });
