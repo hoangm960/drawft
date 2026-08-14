@@ -4,7 +4,7 @@ import type { Shape, StrokePattern } from "@/types";
 
 const PATTERNS: StrokePattern[] = ["solid", "dashed", "dotted"];
 
-export default function StrokePanel() {
+export default function StrokeSettings() {
     const { shapes, selectedIds, updateSelectedShapes } = useCanvasStore();
 
     const selectedShape: Shape | undefined = selectedIds
@@ -19,7 +19,7 @@ export default function StrokePanel() {
     const isDisabled = selectedIds.length === 0;
 
     return (
-        <div className="absolute left-full top-0 ml-2 w-48 bg-gray-800/90 rounded-xl p-3 flex flex-col gap-3 pointer-events-auto">
+        <div className="flex flex-col gap-3">
             <div className="flex items-center justify-between">
                 <span className="text-xs text-gray-300">Stroke</span>
                 {isDisabled && (
