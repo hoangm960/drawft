@@ -1,23 +1,31 @@
 import { useCanvasStore } from "@stores/useCanvasStore";
-import { DEFAULT_STROKE } from "@/utils/shapes";
-import type { Shape, StrokePattern } from "@/types";
+import { DEFAULT_CORNER_RADIUS, DEFAULT_STROKE } from "@/utils/shapes";
+import { Tools, type Shape, type StrokePattern } from "@/types";
 
 const PATTERNS: StrokePattern[] = ["solid", "dashed", "dotted"];
 
 export default function ShapeSettings() {
     const { shapes, selectedIds, updateSelectedShapes } = useCanvasStore();
 
-    const selectedShape: Shape | undefined = selectedIds
+    const selectedShapes = selectedIds
         .map(id => shapes.get(id))
-        .filter((s): s is Shape => s !== undefined)[0];
+        .filter((s): s is Shape => s !== undefined);
+
+    const selectedShape: Shape | undefined = selectedShapes[0];
 
     const width = selectedShape?.strokeWidth ?? DEFAULT_STROKE.strokeWidth;
     const color = selectedShape?.strokeColor ?? DEFAULT_STROKE.strokeColor;
     const pattern =
         selectedShape?.strokePattern ?? DEFAULT_STROKE.strokePattern;
     const fillColor = selectedShape?.fillColor;
+    const cornerRadius = selectedShape?.cornerRadius ?? DEFAULT_CORNER_RADIUS;
 
     const isDisabled = selectedIds.length === 0;
+    const showCornerRadius =
+        selectedShapes.length > 0 &&
+        selectedShapes.every(
+            s => s.type === Tools.rect || s.type === Tools.dia
+        );
 
     return (
         <div className="flex flex-col gap-3">
@@ -112,6 +120,32 @@ export default function ShapeSettings() {
                     None
                 </button>
             </div>
+
+            {showCornerRadius && (
+                <>
+                    <span className="text-xs text-gray-300">Corner</span>
+                    <div className="flex flex-col gap-1">
+                        <span className="text-xs text-gray-300">
+                            Radius{" "}
+                            <span className="text-gray-500">
+                                {cornerRadius}px
+                            </span>
+                        </span>
+                        <input
+                            type="range"
+                            min={0}
+                            max={50}
+                            value={cornerRadius}
+                            aria-label="Corner radius"
+                            onChange={e =>
+                                updateSelectedShapes({
+                                    cornerRadius: Number(e.target.value),
+                                })
+                            }
+                        />
+                    </div>
+                </>
+            )}
         </div>
     );
 }
