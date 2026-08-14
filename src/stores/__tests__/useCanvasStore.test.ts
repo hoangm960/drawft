@@ -77,6 +77,76 @@ describe("useCanvasStore", () => {
         });
     });
 
+    describe("updateSelectedShapes", () => {
+        test("applies partial updates to every selected shape", () => {
+            store().addShape(makeShape(1, { x: 0, y: 0 }, { x: 10, y: 10 }));
+            store().addShape(makeShape(2, { x: 20, y: 20 }, { x: 30, y: 30 }));
+            store().setSelectedIds([1, 2]);
+
+            store().updateSelectedShapes({
+                strokeWidth: 6,
+                strokeColor: "#ff0000",
+            });
+
+            expect(store().shapes.get(1)).toEqual({
+                id: 1,
+                type: Tools.rect,
+                from: { x: 0, y: 0 },
+                to: { x: 10, y: 10 },
+                rotation: 0,
+                strokeWidth: 6,
+                strokeColor: "#ff0000",
+            });
+            expect(store().shapes.get(2)?.strokeWidth).toEqual(6);
+            expect(store().shapes.get(2)?.strokeColor).toEqual("#ff0000");
+        });
+
+        test("preserves the other shape properties", () => {
+            store().addShape(makeShape(1, { x: 0, y: 0 }, { x: 10, y: 10 }));
+            store().updateShape(1, { rotation: Math.PI / 3 });
+            store().setSelectedIds([1]);
+
+            store().updateSelectedShapes({ strokePattern: "dotted" });
+
+            expect(store().shapes.get(1)).toEqual({
+                id: 1,
+                type: Tools.rect,
+                from: { x: 0, y: 0 },
+                to: { x: 10, y: 10 },
+                rotation: Math.PI / 3,
+                strokePattern: "dotted",
+            });
+        });
+
+        test("is a no-op when nothing is selected", () => {
+            store().addShape(makeShape(1, { x: 0, y: 0 }, { x: 10, y: 10 }));
+
+            store().updateSelectedShapes({ strokeWidth: 6 });
+
+            expect(store().shapes.get(1)?.strokeWidth).toBeUndefined();
+        });
+
+        test("ignores selected ids that do not exist", () => {
+            store().addShape(makeShape(1, { x: 0, y: 0 }, { x: 10, y: 10 }));
+            store().setSelectedIds([999]);
+
+            store().updateSelectedShapes({ strokeWidth: 6 });
+
+            expect(store().shapes.get(1)?.strokeWidth).toBeUndefined();
+        });
+
+        test("keeps the spatial index in sync", () => {
+            store().addShape(makeShape(1, { x: 0, y: 0 }, { x: 10, y: 10 }));
+            store().setSelectedIds([1]);
+
+            store().updateSelectedShapes({ strokeWidth: 8 });
+
+            expect(store().shapeIndex.all()).toEqual([
+                { minX: 0, minY: 0, maxX: 10, maxY: 10, id: 1 },
+            ]);
+        });
+    });
+
     describe("deleteShapes", () => {
         test("removes shapes from map and index and prunes selectedIds", () => {
             store().addShape(makeShape(1, { x: 0, y: 0 }, { x: 10, y: 10 }));
