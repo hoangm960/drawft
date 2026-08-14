@@ -2,6 +2,7 @@ import { useRef, useCallback, useEffect, useMemo, useState } from "react";
 import { useTool } from "@stores/useToolStore";
 import { useCanvasStore } from "@stores/useCanvasStore";
 import {
+    DEFAULT_STROKE,
     getBoundingBoxForShapes,
     getBoxCorners,
     getFrameRotateHandle,
@@ -18,7 +19,6 @@ import type { Handles, Point, Shape } from "@/types";
 import { Tools } from "@/types";
 
 const HANDLE_SIZE = 8;
-const ROTATE_HANDLE_PADDING = 50;
 
 const HANDLES_CURSORS: Record<Handles, string> = {
     nw: "cursor-nwse-resize",
@@ -121,11 +121,7 @@ export default function Canvas() {
             ne,
             se,
             sw,
-            rotate: getFrameRotateHandle(
-                frame.corners,
-                frame.angle,
-                ROTATE_HANDLE_PADDING
-            ),
+            rotate: getFrameRotateHandle(frame.corners, frame.angle),
         };
     }, [selectedShapes, isSingleLineLike, selectionFrame]);
 

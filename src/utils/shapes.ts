@@ -292,15 +292,16 @@ export const resizeShapesFromHandle = (
     }));
 };
 
+export const ROTATE_HANDLE_PADDING = 50;
+
 export const getFrameRotateHandle = (
     corners: Point[],
-    angle: number,
-    topPadding: number
+    angle: number
 ): Point => {
     const up = { x: Math.sin(angle), y: -Math.cos(angle) };
     return {
-        x: (corners[0].x + corners[1].x) / 2 + up.x * topPadding,
-        y: (corners[0].y + corners[1].y) / 2 + up.y * topPadding,
+        x: (corners[0].x + corners[1].x) / 2 + up.x * ROTATE_HANDLE_PADDING,
+        y: (corners[0].y + corners[1].y) / 2 + up.y * ROTATE_HANDLE_PADDING,
     };
 };
 

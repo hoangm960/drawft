@@ -579,7 +579,7 @@ describe("getFrameRotateHandle", () => {
             { x: 100, y: 100 },
             { x: 0, y: 100 },
         ];
-        expect(getFrameRotateHandle(corners, 0, 50)).toEqual({
+        expect(getFrameRotateHandle(corners, 0)).toEqual({
             x: 50,
             y: -50,
         });
@@ -592,7 +592,7 @@ describe("getFrameRotateHandle", () => {
             { x: 0, y: 100 },
             { x: 0, y: 0 },
         ];
-        const handle = getFrameRotateHandle(corners, Math.PI / 2, 50);
+        const handle = getFrameRotateHandle(corners, Math.PI / 2);
         expect(handle.x).toBeCloseTo(150);
         expect(handle.y).toBeCloseTo(50);
     });
