@@ -1,4 +1,5 @@
-import { Tools, type BoundingBox, type Point, type Shape } from "@/types";
+import { Tools, type Shape } from "@/types";
+import { getCalls, makeBBox, makeShape } from "@/test/factories";
 import {
     DEFAULT_STROKE,
     STROKE_PATTERNS,
@@ -25,23 +26,6 @@ import {
     rotatePoint,
     rotateShapesFromCenter,
 } from "../shapes";
-
-type PathCall = {
-    method: string;
-    args: number[];
-};
-
-const getCalls = (path: Path2D): PathCall[] =>
-    (path as unknown as { calls: PathCall[] }).calls;
-
-const makeShape = (
-    id: number,
-    from: Point,
-    to: Point,
-    type: Tools = Tools.rect
-): Shape => ({ id, type, from, to, rotation: 0 });
-
-const makeBBox = (from: Point, to: Point): BoundingBox => ({ from, to });
 
 describe("getBoundingBox", () => {
     test("returns correct box when from < to", () => {
@@ -115,113 +99,116 @@ describe("drawRectangle", () => {
     test("draws rect with normalized origin and size", () => {
         const path = new Path2D();
         drawRectangle(path, { x: 100, y: 100 }, { x: 200, y: 300 }, 0);
-        expect(getCalls(path)).toEqual([
-            { method: "rect", args: [100, 100, 100, 200] },
-        ]);
+
+        expect(path).toDrawRect(100, 100, 100, 200);
     });
 
     test("normalizes origin and size when from > to", () => {
         const path = new Path2D();
         drawRectangle(path, { x: 200, y: 300 }, { x: 100, y: 100 }, 0);
-        expect(getCalls(path)).toEqual([
-            { method: "rect", args: [100, 100, 100, 200] },
-        ]);
+
+        expect(path).toDrawRect(100, 100, 100, 200);
     });
 
     test("uses the default corner radius when none is given", () => {
         const path = new Path2D();
         drawRectangle(path, { x: 0, y: 0 }, { x: 100, y: 200 });
-        expect(getCalls(path)).toEqual([
-            { method: "roundRect", args: [0, 0, 100, 200, 20] },
-        ]);
+
+        expect(path).toDrawRoundRect(0, 0, 100, 200, 20);
     });
 
     test("rounds corners with roundRect when a radius is given", () => {
         const path = new Path2D();
         drawRectangle(path, { x: 100, y: 100 }, { x: 200, y: 300 }, 10);
-        expect(getCalls(path)).toEqual([
-            { method: "roundRect", args: [100, 100, 100, 200, 10] },
-        ]);
+
+        expect(path).toDrawRoundRect(100, 100, 100, 200, 10);
     });
 
     test("clamps the radius to half the smallest side", () => {
         const path = new Path2D();
         drawRectangle(path, { x: 0, y: 0 }, { x: 100, y: 200 }, 100);
-        expect(getCalls(path)).toEqual([
-            { method: "roundRect", args: [0, 0, 100, 200, 50] },
-        ]);
+
+        expect(path).toDrawRoundRect(0, 0, 100, 200, 50);
     });
 
     test("treats a negative radius as no rounding", () => {
         const path = new Path2D();
         drawRectangle(path, { x: 0, y: 0 }, { x: 100, y: 200 }, -5);
-        expect(getCalls(path)).toEqual([
-            { method: "rect", args: [0, 0, 100, 200] },
-        ]);
+
+        expect(path).toDrawRect(0, 0, 100, 200);
     });
 });
 
 describe("drawDiamond", () => {
+    const MIDPOINT = 50;
+    const HALF_EDGE = 50;
+    const RADIUS = 10;
+    const EDGE = Math.hypot(HALF_EDGE, HALF_EDGE);
+    const INSET = (RADIUS / EDGE) * HALF_EDGE;
+    const CLAMPED_RADIUS = EDGE / 2;
+
     test("draws diamond using midpoints", () => {
         const path = new Path2D();
         drawDiamond(path, { x: 0, y: 0 }, { x: 100, y: 100 }, 0);
-        expect(getCalls(path)).toEqual([
-            { method: "moveTo", args: [50, 0] },
-            { method: "lineTo", args: [100, 50] },
-            { method: "lineTo", args: [50, 100] },
-            { method: "lineTo", args: [0, 50] },
-            { method: "closePath", args: [] },
-        ]);
+
+        expect(path).toMoveTo(MIDPOINT, 0);
+        expect(path).toLineTo(100, MIDPOINT);
+        expect(path).toLineTo(MIDPOINT, 100);
+        expect(path).toLineTo(0, MIDPOINT);
+        expect(path).toClosePath();
     });
 
     test("draws diamond when from > to", () => {
         const path = new Path2D();
         drawDiamond(path, { x: 100, y: 100 }, { x: 0, y: 0 }, 0);
-        expect(getCalls(path)).toEqual([
-            { method: "moveTo", args: [50, 0] },
-            { method: "lineTo", args: [100, 50] },
-            { method: "lineTo", args: [50, 100] },
-            { method: "lineTo", args: [0, 50] },
-            { method: "closePath", args: [] },
-        ]);
+
+        expect(path).toMoveTo(MIDPOINT, 0);
+        expect(path).toLineTo(100, MIDPOINT);
+        expect(path).toLineTo(MIDPOINT, 100);
+        expect(path).toLineTo(0, MIDPOINT);
+        expect(path).toClosePath();
     });
 
     test("rounds corners with arcTo when a radius is given", () => {
         const path = new Path2D();
-        drawDiamond(path, { x: 0, y: 0 }, { x: 100, y: 100 }, 10);
-        const edge = Math.hypot(50, 50);
-        const u = 10 / edge;
-        expect(getCalls(path)).toEqual([
-            { method: "moveTo", args: [50 - 50 * u, 50 * u] },
-            { method: "arcTo", args: [50, 0, 50 + 50 * u, 50 * u, 10] },
-            { method: "arcTo", args: [100, 50, 100 - 50 * u, 50 + 50 * u, 10] },
-            { method: "arcTo", args: [50, 100, 50 - 50 * u, 100 - 50 * u, 10] },
-            { method: "arcTo", args: [0, 50, 50 * u, 50 - 50 * u, 10] },
-            { method: "closePath", args: [] },
-        ]);
+        drawDiamond(path, { x: 0, y: 0 }, { x: 100, y: 100 }, RADIUS);
+
+        expect(path).toMoveTo(MIDPOINT - INSET, INSET);
+        expect(path).toArcTo(MIDPOINT, 0, MIDPOINT + INSET, INSET, RADIUS);
+        expect(path).toArcTo(
+            100,
+            MIDPOINT,
+            100 - INSET,
+            MIDPOINT + INSET,
+            RADIUS
+        );
+        expect(path).toArcTo(
+            MIDPOINT,
+            100,
+            MIDPOINT - INSET,
+            100 - INSET,
+            RADIUS
+        );
+        expect(path).toArcTo(0, MIDPOINT, INSET, MIDPOINT - INSET, RADIUS);
+        expect(path).toClosePath();
     });
 
     test("clamps the radius to half an edge", () => {
         const path = new Path2D();
         drawDiamond(path, { x: 0, y: 0 }, { x: 100, y: 100 }, 100);
-        const r = Math.hypot(50, 50) / 2;
-        const arcToCalls = getCalls(path).filter(c => c.method === "arcTo");
-        expect(arcToCalls).toHaveLength(4);
-        for (const call of arcToCalls) {
-            expect(call.args[4]).toBeCloseTo(r);
-        }
+
+        expect(path).toHaveArcRadius(CLAMPED_RADIUS);
     });
 
     test("treats a negative radius as no rounding", () => {
         const path = new Path2D();
         drawDiamond(path, { x: 0, y: 0 }, { x: 100, y: 100 }, -5);
-        expect(getCalls(path)).toEqual([
-            { method: "moveTo", args: [50, 0] },
-            { method: "lineTo", args: [100, 50] },
-            { method: "lineTo", args: [50, 100] },
-            { method: "lineTo", args: [0, 50] },
-            { method: "closePath", args: [] },
-        ]);
+
+        expect(path).toMoveTo(MIDPOINT, 0);
+        expect(path).toLineTo(100, MIDPOINT);
+        expect(path).toLineTo(MIDPOINT, 100);
+        expect(path).toLineTo(0, MIDPOINT);
+        expect(path).toClosePath();
     });
 });
 
@@ -229,17 +216,15 @@ describe("drawEllipse", () => {
     test("draws ellipse with center and radii", () => {
         const path = new Path2D();
         drawEllipse(path, { x: 0, y: 0 }, { x: 100, y: 50 });
-        expect(getCalls(path)).toEqual([
-            { method: "ellipse", args: [50, 25, 50, 25, 0, 0, 2 * Math.PI] },
-        ]);
+
+        expect(path).toDrawEllipse(50, 25, 50, 25, 0, 0, 2 * Math.PI);
     });
 
     test("uses absolute radii when from > to", () => {
         const path = new Path2D();
         drawEllipse(path, { x: 100, y: 50 }, { x: 0, y: 0 });
-        expect(getCalls(path)).toEqual([
-            { method: "ellipse", args: [50, 25, 50, 25, 0, 0, 2 * Math.PI] },
-        ]);
+
+        expect(path).toDrawEllipse(50, 25, 50, 25, 0, 0, 2 * Math.PI);
     });
 });
 
@@ -247,46 +232,24 @@ describe("drawArrow", () => {
     test("draws line and arrowhead with default headlen", () => {
         const path = new Path2D();
         drawArrow(path, { x: 0, y: 0 }, { x: 100, y: 0 });
+        const shaft = 10 * Math.cos(Math.PI / 6);
+        const wing = 10 * Math.sin(Math.PI / 6);
 
-        const calls = getCalls(path);
-        expect(calls[0]).toEqual({ method: "moveTo", args: [0, 0] });
-        expect(calls[1]).toEqual({ method: "lineTo", args: [100, 0] });
-        expect(calls[2]).toEqual({
-            method: "lineTo",
-            args: [
-                100 - 10 * Math.cos(Math.PI / 6),
-                10 * Math.sin(Math.PI / 6),
-            ],
-        });
-        expect(calls[3]).toEqual({ method: "moveTo", args: [100, 0] });
-        expect(calls[4]).toEqual({
-            method: "lineTo",
-            args: [
-                100 - 10 * Math.cos(Math.PI / 6),
-                -10 * Math.sin(Math.PI / 6),
-            ],
-        });
+        expect(path).toMoveTo(0, 0);
+        expect(path).toLineTo(100, 0);
+        expect(path).toLineTo(100 - shaft, wing);
+        expect(path).toMoveTo(100, 0);
+        expect(path).toLineTo(100 - shaft, wing);
     });
 
     test("respects custom headlen", () => {
         const path = new Path2D();
         drawArrow(path, { x: 0, y: 0 }, { x: 100, y: 0 }, 20);
+        const shaft = 20 * Math.cos(Math.PI / 6);
+        const wing = 20 * Math.sin(Math.PI / 6);
 
-        const calls = getCalls(path);
-        expect(calls[2]).toEqual({
-            method: "lineTo",
-            args: [
-                100 - 20 * Math.cos(Math.PI / 6),
-                20 * Math.sin(Math.PI / 6),
-            ],
-        });
-        expect(calls[4]).toEqual({
-            method: "lineTo",
-            args: [
-                100 - 20 * Math.cos(Math.PI / 6),
-                -20 * Math.sin(Math.PI / 6),
-            ],
-        });
+        expect(path).toLineTo(100 - shaft, wing);
+        expect(path).toLineTo(100 - shaft, -wing);
     });
 });
 
@@ -294,10 +257,9 @@ describe("drawLine", () => {
     test("draws a single line from point to point", () => {
         const path = new Path2D();
         drawLine(path, { x: 0, y: 0 }, { x: 100, y: 200 });
-        expect(getCalls(path)).toEqual([
-            { method: "moveTo", args: [0, 0] },
-            { method: "lineTo", args: [100, 200] },
-        ]);
+
+        expect(path).toMoveTo(0, 0);
+        expect(path).toLineTo(100, 200);
     });
 });
 
@@ -492,18 +454,16 @@ describe("getShapePath", () => {
             ...makeShape(1, { x: 0, y: 0 }, { x: 10, y: 10 }),
             cornerRadius: 0,
         });
-        expect(getCalls(path)).toEqual([
-            { method: "rect", args: [0, 0, 10, 10] },
-        ]);
+
+        expect(path).toDrawRect(0, 0, 10, 10);
     });
 
     test("applies the default corner radius to a rect", () => {
         const path = getShapePath(
             makeShape(1, { x: 0, y: 0 }, { x: 100, y: 200 })
         );
-        expect(getCalls(path)).toEqual([
-            { method: "roundRect", args: [0, 0, 100, 200, 20] },
-        ]);
+
+        expect(path).toDrawRoundRect(0, 0, 100, 200, 20);
     });
 
     test("forwards cornerRadius to drawRectangle", () => {
@@ -511,9 +471,8 @@ describe("getShapePath", () => {
             ...makeShape(1, { x: 0, y: 0 }, { x: 10, y: 10 }),
             cornerRadius: 5,
         });
-        expect(getCalls(path)).toEqual([
-            { method: "roundRect", args: [0, 0, 10, 10, 5] },
-        ]);
+
+        expect(path).toDrawRoundRect(0, 0, 10, 10, 5);
     });
 
     test("forwards cornerRadius to drawDiamond", () => {
@@ -522,9 +481,10 @@ describe("getShapePath", () => {
             cornerRadius: 10,
         });
         const calls = getCalls(path);
+
         expect(calls[0].method).toBe("moveTo");
-        expect(calls.filter(c => c.method === "arcTo")).toHaveLength(4);
-        expect(calls.at(-1)).toEqual({ method: "closePath", args: [] });
+        expect(calls.filter(call => call.method === "arcTo")).toHaveLength(4);
+        expect(path).toClosePath();
     });
 
     test("dispatches dia to drawDiamond", () => {
@@ -532,17 +492,17 @@ describe("getShapePath", () => {
             ...makeShape(1, { x: 0, y: 0 }, { x: 100, y: 100 }, Tools.dia),
             cornerRadius: 0,
         });
-        expect(getCalls(path)[0]).toEqual({ method: "moveTo", args: [50, 0] });
-        expect(getCalls(path)[4]).toEqual({ method: "closePath", args: [] });
+
+        expect(path).toMoveTo(50, 0);
+        expect(path).toClosePath();
     });
 
     test("dispatches ellipse to drawEllipse", () => {
         const path = getShapePath(
             makeShape(1, { x: 0, y: 0 }, { x: 100, y: 50 }, Tools.ellipse)
         );
-        expect(getCalls(path)).toEqual([
-            { method: "ellipse", args: [50, 25, 50, 25, 0, 0, 2 * Math.PI] },
-        ]);
+
+        expect(path).toDrawEllipse(50, 25, 50, 25, 0, 0, 2 * Math.PI);
     });
 
     test("dispatches arrow to drawArrow", () => {
@@ -550,17 +510,17 @@ describe("getShapePath", () => {
             makeShape(1, { x: 0, y: 0 }, { x: 100, y: 0 }, Tools.arrow)
         );
         const calls = getCalls(path);
-        expect(calls.filter(c => c.method === "lineTo")).toHaveLength(3);
+
+        expect(calls.filter(call => call.method === "lineTo")).toHaveLength(3);
     });
 
     test("dispatches line to drawLine", () => {
         const path = getShapePath(
             makeShape(1, { x: 0, y: 0 }, { x: 100, y: 200 }, Tools.line)
         );
-        expect(getCalls(path)).toEqual([
-            { method: "moveTo", args: [0, 0] },
-            { method: "lineTo", args: [100, 200] },
-        ]);
+
+        expect(path).toMoveTo(0, 0);
+        expect(path).toLineTo(100, 200);
     });
 });
 
@@ -783,16 +743,23 @@ describe("rotateShapesFromCenter", () => {
 });
 
 describe("stroke helpers", () => {
-    test("maps every pattern to a dash array", () => {
-        expect(getStrokeDash("solid")).toEqual(STROKE_PATTERNS.solid);
-        expect(getStrokeDash("dashed")).toEqual([8, 8]);
-        expect(getStrokeDash("dotted")).toEqual([2, 6]);
+    test.each([
+        ["solid", STROKE_PATTERNS.solid],
+        ["dashed", [8, 8]],
+        ["dotted", [2, 6]],
+    ] as const)("maps the %s pattern to a dash array", (pattern, expected) => {
+        expect(getStrokeDash(pattern)).toEqual(expected);
     });
 
-    test("scales dash lengths by the zoom scale", () => {
-        expect(getStrokeDashScaled("dashed", 2)).toEqual([4, 4]);
-        expect(getStrokeDashScaled("dotted", 0.5)).toEqual([4, 12]);
-    });
+    test.each([
+        ["dashed", 2, [4, 4]],
+        ["dotted", 0.5, [4, 12]],
+    ] as const)(
+        "scales the %s pattern dash lengths by the zoom scale %d",
+        (pattern, scale, expected) => {
+            expect(getStrokeDashScaled(pattern, scale)).toEqual(expected);
+        }
+    );
 
     test("falls back to the default solid pattern when undefined", () => {
         expect(getStrokeDashScaled(undefined, 1)).toEqual(

@@ -1,38 +1,16 @@
-import { render, fireEvent, act } from "@testing-library/react";
+import { render, fireEvent } from "@testing-library/react";
 import Canvas from "../Canvas";
 import { useTool } from "@stores/useToolStore";
 import { useCanvasStore } from "@stores/useCanvasStore";
-import { Tools, type Point, type Shape } from "@/types";
+import { Tools } from "@/types";
+import { createMockContext, makeShape, type MockHit } from "@/test/factories";
 
 const canvas = () => document.getElementById("whiteboard") as HTMLElement;
 
-const makeShape = (
-    id: number,
-    from: Point,
-    to: Point,
-    type: Tools = Tools.rect
-): Shape => ({ id, type, from, to, rotation: 0 });
-
-type MockHit = { inStroke: boolean; inPath: boolean };
-
-const createMockContext = (hit: MockHit) => ({
-    strokeStyle: "",
-    fillStyle: "",
-    lineWidth: 0,
-    save: jest.fn(),
-    restore: jest.fn(),
-    translate: jest.fn(),
-    rotate: jest.fn(),
-    setLineDash: jest.fn(),
-    setTransform: jest.fn(),
-    clearRect: jest.fn(),
-    fill: jest.fn(),
-    stroke: jest.fn(),
-    fillRect: jest.fn(),
-    strokeRect: jest.fn(),
-    isPointInStroke: jest.fn(() => hit.inStroke),
-    isPointInPath: jest.fn(() => hit.inPath),
-});
+const originalViewport = {
+    width: window.innerWidth,
+    height: window.innerHeight,
+};
 
 describe("Canvas", () => {
     let hit: MockHit;
@@ -48,6 +26,8 @@ describe("Canvas", () => {
 
     afterEach(() => {
         jest.restoreAllMocks();
+        window.innerWidth = originalViewport.width;
+        window.innerHeight = originalViewport.height;
     });
 
     test("renders a canvas with the whiteboard id", () => {
@@ -57,14 +37,17 @@ describe("Canvas", () => {
         expect(canvas().tagName).toEqual("CANVAS");
     });
 
-    test("applies the cursor class for the active tool", () => {
+    test("shows a grab cursor when the pan tool is active", () => {
         useTool.getState().setTool(Tools.pan);
-        const { unmount } = render(<Canvas />);
-        expect(canvas()).toHaveClass("cursor-grab");
-        unmount();
+        render(<Canvas />);
 
+        expect(canvas()).toHaveClass("cursor-grab");
+    });
+
+    test("shows no custom cursor when the select tool is active", () => {
         useTool.getState().setTool(Tools.select);
         render(<Canvas />);
+
         expect(canvas()).not.toHaveClass(/cursor-/);
     });
 
@@ -75,27 +58,37 @@ describe("Canvas", () => {
         expect(canvas()).toHaveClass("cursor-crosshair");
     });
 
-    test("zooms in and out with the wheel", () => {
+    test("zooms in when scrolling up", () => {
         render(<Canvas />);
 
         fireEvent.wheel(canvas(), { deltaY: -100 });
-        expect(useCanvasStore.getState().scale).toBeCloseTo(1.1);
 
-        fireEvent.wheel(canvas(), { deltaY: 100 });
-        expect(useCanvasStore.getState().scale).toBeCloseTo(1.0);
+        expect(useCanvasStore.getState().scale).toBeCloseTo(1.1);
     });
 
-    test("clamps the zoom to the allowed range", () => {
+    test("zooms out when scrolling down", () => {
+        render(<Canvas />);
+
+        fireEvent.wheel(canvas(), { deltaY: 100 });
+
+        expect(useCanvasStore.getState().scale).toBeCloseTo(0.9);
+    });
+
+    test("clamps zoom to the minimum allowed scale", () => {
         useCanvasStore.getState().setScale(0.1);
         render(<Canvas />);
 
         fireEvent.wheel(canvas(), { deltaY: 100000 });
-        expect(useCanvasStore.getState().scale).toEqual(0.1);
 
-        act(() => {
-            useCanvasStore.getState().setScale(5);
-        });
+        expect(useCanvasStore.getState().scale).toEqual(0.1);
+    });
+
+    test("clamps zoom to the maximum allowed scale", () => {
+        useCanvasStore.getState().setScale(5);
+        render(<Canvas />);
+
         fireEvent.wheel(canvas(), { deltaY: -100000 });
+
         expect(useCanvasStore.getState().scale).toEqual(5);
     });
 
@@ -280,9 +273,19 @@ describe("Canvas", () => {
 
         fireEvent.keyDown(window, { key: "Delete" });
 
-        const state = useCanvasStore.getState();
-        expect(state.shapes.size).toEqual(0);
-        expect(state.selectedIds).toEqual([]);
+        expect(useCanvasStore.getState().shapes.size).toEqual(0);
+    });
+
+    test("clears the selection after deleting with the Delete key", () => {
+        useCanvasStore
+            .getState()
+            .addShape(makeShape(0, { x: 0, y: 0 }, { x: 100, y: 100 }));
+        useCanvasStore.getState().setSelectedIds([0]);
+        render(<Canvas />);
+
+        fireEvent.keyDown(window, { key: "Delete" });
+
+        expect(useCanvasStore.getState().selectedIds).toEqual([]);
     });
 
     test("deletes the selected shape with the Backspace key", () => {
@@ -328,7 +331,7 @@ describe("Canvas", () => {
         expect(useCanvasStore.getState().offset).toEqual({ x: 50, y: 75 });
     });
 
-    test("shift+click toggles a selected shape in and out of the selection", () => {
+    test("selects a shape on click", () => {
         useCanvasStore
             .getState()
             .addShape(makeShape(0, { x: 0, y: 0 }, { x: 100, y: 100 }));
@@ -339,20 +342,46 @@ describe("Canvas", () => {
         render(<Canvas />);
 
         fireEvent.mouseDown(canvas(), { clientX: 50, clientY: 50 });
+
         expect(useCanvasStore.getState().selectedIds).toEqual([1]);
+    });
+
+    test("deselects a selected shape on shift+click", () => {
+        useCanvasStore
+            .getState()
+            .addShape(makeShape(0, { x: 0, y: 0 }, { x: 100, y: 100 }));
+        useCanvasStore
+            .getState()
+            .addShape(makeShape(1, { x: 150, y: 150 }, { x: 250, y: 250 }));
+        useCanvasStore.getState().setSelectedIds([1]);
+        hit.inStroke = true;
+        render(<Canvas />);
 
         fireEvent.mouseDown(canvas(), {
             clientX: 50,
             clientY: 50,
             shiftKey: true,
         });
+
         expect(useCanvasStore.getState().selectedIds).toEqual([]);
+    });
+
+    test("selects a shape on shift+click when the selection is empty", () => {
+        useCanvasStore
+            .getState()
+            .addShape(makeShape(0, { x: 0, y: 0 }, { x: 100, y: 100 }));
+        useCanvasStore
+            .getState()
+            .addShape(makeShape(1, { x: 150, y: 150 }, { x: 250, y: 250 }));
+        hit.inStroke = true;
+        render(<Canvas />);
 
         fireEvent.mouseDown(canvas(), {
             clientX: 50,
             clientY: 50,
             shiftKey: true,
         });
+
         expect(useCanvasStore.getState().selectedIds).toEqual([1]);
     });
 
@@ -417,9 +446,20 @@ describe("Canvas", () => {
         render(<Canvas />);
 
         fireEvent.mouseMove(canvas(), { clientX: 50, clientY: -50 });
-        expect(canvas()).toHaveClass("cursor-grab");
 
+        expect(canvas()).toHaveClass("cursor-grab");
+    });
+
+    test("clears the cursor when the mouse leaves the canvas", () => {
+        useCanvasStore
+            .getState()
+            .addShape(makeShape(0, { x: 0, y: 0 }, { x: 100, y: 100 }));
+        useCanvasStore.getState().setSelectedIds([0]);
+        render(<Canvas />);
+
+        fireEvent.mouseMove(canvas(), { clientX: 50, clientY: -50 });
         fireEvent.mouseLeave(canvas());
+
         expect(canvas()).not.toHaveClass(/cursor-/);
     });
 

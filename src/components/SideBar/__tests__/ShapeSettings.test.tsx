@@ -1,12 +1,10 @@
 import { render, screen, fireEvent } from "@testing-library/react";
 import ShapeSettings from "../ShapeSettings";
 import { useCanvasStore } from "@stores/useCanvasStore";
-import { Tools, type Point, type Shape } from "@/types";
+import { Tools, type Shape } from "@/types";
+import { makeShape } from "@/test/factories";
 
-const makeShape = (
-    id: number,
-    from: Point,
-    to: Point,
+const renderWithSelectedShape = (
     type: Tools = Tools.rect,
     props?: Partial<
         Pick<
@@ -18,7 +16,12 @@ const makeShape = (
             | "cornerRadius"
         >
     >
-): Shape => ({ id, type, from, to, rotation: 0, ...props });
+) => {
+    const store = useCanvasStore.getState();
+    store.addShape(makeShape(1, { x: 0, y: 0 }, { x: 10, y: 10 }, type, props));
+    store.setSelectedIds([1]);
+    return render(<ShapeSettings />);
+};
 
 describe("ShapeSettings", () => {
     beforeEach(() => {
@@ -40,17 +43,11 @@ describe("ShapeSettings", () => {
     });
 
     test("seeds the controls from the selected shape's stroke values", () => {
-        const store = useCanvasStore.getState();
-        store.addShape(
-            makeShape(1, { x: 0, y: 0 }, { x: 10, y: 10 }, Tools.rect, {
-                strokeWidth: 6,
-                strokeColor: "#00ff00",
-                strokePattern: "dotted",
-            })
-        );
-        store.setSelectedIds([1]);
-
-        render(<ShapeSettings />);
+        renderWithSelectedShape(Tools.rect, {
+            strokeWidth: 6,
+            strokeColor: "#00ff00",
+            strokePattern: "dotted",
+        });
 
         expect(screen.getByLabelText("Stroke width")).toHaveValue("6");
         expect(screen.getByLabelText("Stroke color")).toHaveValue("#00ff00");
@@ -60,11 +57,7 @@ describe("ShapeSettings", () => {
     });
 
     test("applies the width change to the selection", () => {
-        const store = useCanvasStore.getState();
-        store.addShape(makeShape(1, { x: 0, y: 0 }, { x: 10, y: 10 }));
-        store.setSelectedIds([1]);
-
-        render(<ShapeSettings />);
+        renderWithSelectedShape();
 
         fireEvent.change(screen.getByLabelText("Stroke width"), {
             target: { value: "8" },
@@ -74,11 +67,7 @@ describe("ShapeSettings", () => {
     });
 
     test("applies the pattern change to the selection", () => {
-        const store = useCanvasStore.getState();
-        store.addShape(makeShape(1, { x: 0, y: 0 }, { x: 10, y: 10 }));
-        store.setSelectedIds([1]);
-
-        render(<ShapeSettings />);
+        renderWithSelectedShape();
 
         fireEvent.click(screen.getByLabelText("Stroke pattern dashed"));
 
@@ -88,11 +77,7 @@ describe("ShapeSettings", () => {
     });
 
     test("applies the color change to the selection", () => {
-        const store = useCanvasStore.getState();
-        store.addShape(makeShape(1, { x: 0, y: 0 }, { x: 10, y: 10 }));
-        store.setSelectedIds([1]);
-
-        render(<ShapeSettings />);
+        renderWithSelectedShape();
 
         fireEvent.change(screen.getByLabelText("Stroke color"), {
             target: { value: "#ff0000" },
@@ -103,10 +88,17 @@ describe("ShapeSettings", () => {
         );
     });
 
-    test("does nothing when controls are used with no selection", () => {
+    test("does nothing when a pattern is clicked with no selection", () => {
         render(<ShapeSettings />);
 
         fireEvent.click(screen.getByLabelText("Stroke pattern dashed"));
+
+        expect(useCanvasStore.getState().shapes.size).toEqual(0);
+    });
+
+    test("does nothing when the stroke width is changed with no selection", () => {
+        render(<ShapeSettings />);
+
         fireEvent.change(screen.getByLabelText("Stroke width"), {
             target: { value: "8" },
         });
@@ -114,47 +106,32 @@ describe("ShapeSettings", () => {
         expect(useCanvasStore.getState().shapes.size).toEqual(0);
     });
 
-    test("renders a button for every supported pattern", () => {
-        render(<ShapeSettings />);
+    test.each(["solid", "dashed", "dotted"])(
+        "renders the %s pattern button",
+        pattern => {
+            render(<ShapeSettings />);
 
-        for (const pattern of ["solid", "dashed", "dotted"]) {
             expect(
                 screen.getByLabelText(`Stroke pattern ${pattern}`)
             ).toBeInTheDocument();
         }
-    });
+    );
 
     test("shows None active when the selected shape has no fill", () => {
-        const store = useCanvasStore.getState();
-        store.addShape(makeShape(1, { x: 0, y: 0 }, { x: 10, y: 10 }));
-        store.setSelectedIds([1]);
-
-        render(<ShapeSettings />);
+        renderWithSelectedShape();
 
         expect(screen.getByLabelText("No fill")).toHaveClass("bg-gray-500");
     });
 
     test("seeds the fill color from the selected shape", () => {
-        const store = useCanvasStore.getState();
-        store.addShape(
-            makeShape(1, { x: 0, y: 0 }, { x: 10, y: 10 }, Tools.rect, {
-                fillColor: "#ff0000",
-            })
-        );
-        store.setSelectedIds([1]);
-
-        render(<ShapeSettings />);
+        renderWithSelectedShape(Tools.rect, { fillColor: "#ff0000" });
 
         expect(screen.getByLabelText("Fill color")).toHaveValue("#ff0000");
         expect(screen.getByLabelText("No fill")).toHaveClass("bg-gray-700");
     });
 
     test("applies the fill color change to the selection", () => {
-        const store = useCanvasStore.getState();
-        store.addShape(makeShape(1, { x: 0, y: 0 }, { x: 10, y: 10 }));
-        store.setSelectedIds([1]);
-
-        render(<ShapeSettings />);
+        renderWithSelectedShape();
 
         fireEvent.change(screen.getByLabelText("Fill color"), {
             target: { value: "#0000ff" },
@@ -166,15 +143,7 @@ describe("ShapeSettings", () => {
     });
 
     test("clears the fill when clicking None", () => {
-        const store = useCanvasStore.getState();
-        store.addShape(
-            makeShape(1, { x: 0, y: 0 }, { x: 10, y: 10 }, Tools.rect, {
-                fillColor: "#ff0000",
-            })
-        );
-        store.setSelectedIds([1]);
-
-        render(<ShapeSettings />);
+        renderWithSelectedShape(Tools.rect, { fillColor: "#ff0000" });
 
         fireEvent.click(screen.getByLabelText("No fill"));
 
@@ -184,39 +153,19 @@ describe("ShapeSettings", () => {
     });
 
     test("seeds the corner radius from a selected rect", () => {
-        const store = useCanvasStore.getState();
-        store.addShape(
-            makeShape(1, { x: 0, y: 0 }, { x: 10, y: 10 }, Tools.rect, {
-                cornerRadius: 12,
-            })
-        );
-        store.setSelectedIds([1]);
-
-        render(<ShapeSettings />);
+        renderWithSelectedShape(Tools.rect, { cornerRadius: 12 });
 
         expect(screen.getByLabelText("Corner radius")).toHaveValue("12");
     });
 
     test("shows the corner radius control for a selected diamond", () => {
-        const store = useCanvasStore.getState();
-        store.addShape(
-            makeShape(1, { x: 0, y: 0 }, { x: 10, y: 10 }, Tools.dia)
-        );
-        store.setSelectedIds([1]);
-
-        render(<ShapeSettings />);
+        renderWithSelectedShape(Tools.dia);
 
         expect(screen.getByLabelText("Corner radius")).toBeInTheDocument();
     });
 
     test("hides the corner radius control for a selected line", () => {
-        const store = useCanvasStore.getState();
-        store.addShape(
-            makeShape(1, { x: 0, y: 0 }, { x: 10, y: 10 }, Tools.line)
-        );
-        store.setSelectedIds([1]);
-
-        render(<ShapeSettings />);
+        renderWithSelectedShape(Tools.line);
 
         expect(
             screen.queryByLabelText("Corner radius")
@@ -239,11 +188,7 @@ describe("ShapeSettings", () => {
     });
 
     test("applies the corner radius change to the selection", () => {
-        const store = useCanvasStore.getState();
-        store.addShape(makeShape(1, { x: 0, y: 0 }, { x: 10, y: 10 }));
-        store.setSelectedIds([1]);
-
-        render(<ShapeSettings />);
+        renderWithSelectedShape();
 
         fireEvent.change(screen.getByLabelText("Corner radius"), {
             target: { value: "25" },

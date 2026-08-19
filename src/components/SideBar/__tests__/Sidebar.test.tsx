@@ -1,14 +1,8 @@
 import { render, screen } from "@testing-library/react";
 import Sidebar from "../Sidebar";
 import { useCanvasStore } from "@stores/useCanvasStore";
-import { Tools, type Point, type Shape } from "@/types";
-
-const makeShape = (
-    id: number,
-    from: Point,
-    to: Point,
-    type: Tools = Tools.rect
-): Shape => ({ id, type, from, to, rotation: 0 });
+import { Tools } from "@/types";
+import { makeShape } from "@/test/factories";
 
 describe("Sidebar", () => {
     beforeEach(() => {
@@ -35,10 +29,15 @@ describe("Sidebar", () => {
         expect(screen.queryByTitle("Fill")).not.toBeInTheDocument();
     });
 
-    test("shows a hint and disables controls when nothing is selected", () => {
+    test("shows a hint when nothing is selected", () => {
         render(<Sidebar />);
 
         expect(screen.getByText("Select a shape")).toBeInTheDocument();
+    });
+
+    test("disables the controls when nothing is selected", () => {
+        render(<Sidebar />);
+
         expect(screen.getByLabelText("Stroke width")).toBeDisabled();
         expect(screen.getByLabelText("Fill color")).toBeDisabled();
     });

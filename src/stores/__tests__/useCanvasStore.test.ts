@@ -1,14 +1,8 @@
-import { Tools, type Point, type Shape } from "@/types";
+import { Tools } from "@/types";
+import { makeShape } from "@/test/factories";
 import { useCanvasStore } from "../useCanvasStore";
 
 const store = () => useCanvasStore.getState();
-
-const makeShape = (
-    id: number,
-    from: Point,
-    to: Point,
-    type: Tools = Tools.rect
-): Shape => ({ id, type, from, to, rotation: 0 });
 
 describe("useCanvasStore", () => {
     beforeEach(() => {
@@ -16,7 +10,7 @@ describe("useCanvasStore", () => {
     });
 
     describe("addShape", () => {
-        test("adds shape to map and index", () => {
+        test("adds the shape to the map", () => {
             store().addShape(
                 makeShape(1, { x: 100, y: 100 }, { x: 200, y: 300 })
             );
@@ -28,6 +22,13 @@ describe("useCanvasStore", () => {
                 to: { x: 200, y: 300 },
                 rotation: 0,
             });
+        });
+
+        test("indexes the shape bbox for hit-testing", () => {
+            store().addShape(
+                makeShape(1, { x: 100, y: 100 }, { x: 200, y: 300 })
+            );
+
             expect(store().shapeIndex.all()).toEqual([
                 { minX: 100, minY: 100, maxX: 200, maxY: 300, id: 1 },
             ]);
@@ -35,7 +36,7 @@ describe("useCanvasStore", () => {
     });
 
     describe("updateShape", () => {
-        test("updates map and re-indexes the shape", () => {
+        test("updates the shape in the map", () => {
             store().addShape(makeShape(1, { x: 0, y: 0 }, { x: 10, y: 10 }));
             store().updateShape(1, {
                 from: { x: 100, y: 100 },
@@ -49,6 +50,15 @@ describe("useCanvasStore", () => {
                 to: { x: 110, y: 110 },
                 rotation: 0,
             });
+        });
+
+        test("re-indexes the shape bbox on update", () => {
+            store().addShape(makeShape(1, { x: 0, y: 0 }, { x: 10, y: 10 }));
+            store().updateShape(1, {
+                from: { x: 100, y: 100 },
+                to: { x: 110, y: 110 },
+            });
+
             expect(store().shapeIndex.all()).toEqual([
                 { minX: 100, minY: 100, maxX: 110, maxY: 110, id: 1 },
             ]);
@@ -148,22 +158,39 @@ describe("useCanvasStore", () => {
     });
 
     describe("deleteShapes", () => {
-        test("removes shapes from map and index and prunes selectedIds", () => {
+        test("removes the deleted shapes from the map", () => {
             store().addShape(makeShape(1, { x: 0, y: 0 }, { x: 10, y: 10 }));
             store().addShape(makeShape(2, { x: 20, y: 20 }, { x: 30, y: 30 }));
             store().addShape(makeShape(3, { x: 40, y: 40 }, { x: 50, y: 50 }));
-            store().setSelectedIds([1, 2]);
 
             store().deleteShapes([1, 2]);
 
             expect(store().shapes.has(1)).toBe(false);
             expect(store().shapes.has(2)).toBe(false);
             expect(store().shapes.has(3)).toBe(true);
+        });
+
+        test("prunes the deleted shapes from the spatial index", () => {
+            store().addShape(makeShape(1, { x: 0, y: 0 }, { x: 10, y: 10 }));
+            store().addShape(makeShape(2, { x: 20, y: 20 }, { x: 30, y: 30 }));
+            store().addShape(makeShape(3, { x: 40, y: 40 }, { x: 50, y: 50 }));
+
+            store().deleteShapes([1, 2]);
+
             expect(
                 store()
                     .shapeIndex.all()
                     .map(item => item.id)
             ).toEqual([3]);
+        });
+
+        test("prunes deleted ids from the selection", () => {
+            store().addShape(makeShape(1, { x: 0, y: 0 }, { x: 10, y: 10 }));
+            store().addShape(makeShape(2, { x: 20, y: 20 }, { x: 30, y: 30 }));
+            store().setSelectedIds([1, 2]);
+
+            store().deleteShapes([1, 2]);
+
             expect(store().selectedIds).toEqual([]);
         });
 
@@ -178,7 +205,7 @@ describe("useCanvasStore", () => {
     });
 
     describe("moveSelectedShapes", () => {
-        test("moves only the selected shapes in map and index", () => {
+        test("moves only the selected shapes", () => {
             store().addShape(makeShape(1, { x: 0, y: 0 }, { x: 10, y: 10 }));
             store().addShape(makeShape(2, { x: 20, y: 20 }, { x: 30, y: 30 }));
             store().setSelectedIds([1]);
@@ -199,6 +226,15 @@ describe("useCanvasStore", () => {
                 to: { x: 30, y: 30 },
                 rotation: 0,
             });
+        });
+
+        test("keeps the spatial index in sync after moving", () => {
+            store().addShape(makeShape(1, { x: 0, y: 0 }, { x: 10, y: 10 }));
+            store().addShape(makeShape(2, { x: 20, y: 20 }, { x: 30, y: 30 }));
+            store().setSelectedIds([1]);
+
+            store().moveSelectedShapes(5, 5);
+
             expect(
                 store()
                     .shapeIndex.all()
@@ -213,6 +249,37 @@ describe("useCanvasStore", () => {
                     maxY: 15,
                 })
             ).toEqual([{ minX: 5, minY: 5, maxX: 15, maxY: 15, id: 1 }]);
+        });
+
+        test("preserves rotation while moving", () => {
+            store().addShape(makeShape(1, { x: 0, y: 0 }, { x: 10, y: 10 }));
+            store().updateShape(1, { rotation: Math.PI / 3 });
+            store().setSelectedIds([1]);
+
+            store().moveSelectedShapes(5, 5);
+
+            expect(store().shapes.get(1)).toEqual({
+                id: 1,
+                type: Tools.rect,
+                from: { x: 5, y: 5 },
+                to: { x: 15, y: 15 },
+                rotation: Math.PI / 3,
+            });
+        });
+
+        test("is a no-op when the selected id does not exist", () => {
+            store().addShape(makeShape(1, { x: 0, y: 0 }, { x: 10, y: 10 }));
+            store().setSelectedIds([999]);
+
+            store().moveSelectedShapes(5, 5);
+
+            expect(store().shapes.get(1)).toEqual({
+                id: 1,
+                type: Tools.rect,
+                from: { x: 0, y: 0 },
+                to: { x: 10, y: 10 },
+                rotation: 0,
+            });
         });
     });
 
@@ -245,18 +312,25 @@ describe("useCanvasStore", () => {
     });
 
     describe("toggleSelectedIds", () => {
-        test("multi toggles ids on and off", () => {
+        test("adds ids to the selection when multi is true", () => {
             store().toggleSelectedIds(1, true);
             store().toggleSelectedIds(2, true);
-            expect(store().selectedIds).toEqual([1, 2]);
 
+            expect(store().selectedIds).toEqual([1, 2]);
+        });
+
+        test("removes ids from the selection when multi is true", () => {
             store().toggleSelectedIds(1, true);
+            store().toggleSelectedIds(2, true);
+            store().toggleSelectedIds(1, true);
+
             expect(store().selectedIds).toEqual([2]);
         });
 
-        test("single replaces the whole selection", () => {
+        test("replaces the whole selection when multi is false", () => {
             store().setSelectedIds([1]);
             store().toggleSelectedIds(2, false);
+
             expect(store().selectedIds).toEqual([2]);
         });
     });
@@ -377,39 +451,6 @@ describe("useCanvasStore", () => {
         });
     });
 
-    describe("moveSelectedShapes", () => {
-        test("preserves rotation while moving", () => {
-            store().addShape(makeShape(1, { x: 0, y: 0 }, { x: 10, y: 10 }));
-            store().updateShape(1, { rotation: Math.PI / 3 });
-            store().setSelectedIds([1]);
-
-            store().moveSelectedShapes(5, 5);
-
-            expect(store().shapes.get(1)).toEqual({
-                id: 1,
-                type: Tools.rect,
-                from: { x: 5, y: 5 },
-                to: { x: 15, y: 15 },
-                rotation: Math.PI / 3,
-            });
-        });
-
-        test("is a no-op when the selected id does not exist", () => {
-            store().addShape(makeShape(1, { x: 0, y: 0 }, { x: 10, y: 10 }));
-            store().setSelectedIds([999]);
-
-            store().moveSelectedShapes(5, 5);
-
-            expect(store().shapes.get(1)).toEqual({
-                id: 1,
-                type: Tools.rect,
-                from: { x: 0, y: 0 },
-                to: { x: 10, y: 10 },
-                rotation: 0,
-            });
-        });
-    });
-
     describe("copySelectedShapes", () => {
         test("deep-clones the selected shapes into the clipboard", () => {
             store().addShape(makeShape(1, { x: 0, y: 0 }, { x: 10, y: 10 }));
@@ -450,7 +491,7 @@ describe("useCanvasStore", () => {
     });
 
     describe("duplicateSelectedShapes", () => {
-        test("duplicates the selected shape offset by 10px and selects it", () => {
+        test("duplicates the selected shape with a 10px offset", () => {
             store().addShape(makeShape(1, { x: 0, y: 0 }, { x: 10, y: 10 }));
             store().setSelectedIds([1]);
 
@@ -464,7 +505,23 @@ describe("useCanvasStore", () => {
                 to: { x: 20, y: 20 },
                 rotation: 0,
             });
+        });
+
+        test("selects the duplicated shape", () => {
+            store().addShape(makeShape(1, { x: 0, y: 0 }, { x: 10, y: 10 }));
+            store().setSelectedIds([1]);
+
+            store().duplicateSelectedShapes();
+
             expect(store().selectedIds).toEqual([2]);
+        });
+
+        test("keeps the spatial index in sync after duplicating", () => {
+            store().addShape(makeShape(1, { x: 0, y: 0 }, { x: 10, y: 10 }));
+            store().setSelectedIds([1]);
+
+            store().duplicateSelectedShapes();
+
             expect(
                 store()
                     .shapeIndex.all()
