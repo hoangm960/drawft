@@ -390,6 +390,45 @@ describe("Canvas", () => {
         });
     });
 
+    test("undoes an entire multi-move drag in one step", () => {
+        const shape = makeShape(0, { x: 0, y: 0 }, { x: 100, y: 100 });
+        useCanvasStore.getState().addShape(shape);
+        useCanvasStore.getState().setSelectedIds([0]);
+        hit.inStroke = true;
+        render(<Canvas />);
+
+        fireEvent.mouseDown(canvas(), { clientX: 50, clientY: 50 });
+        fireEvent.mouseMove(canvas(), { clientX: 70, clientY: 80 });
+        fireEvent.mouseMove(canvas(), { clientX: 90, clientY: 110 });
+        fireEvent.mouseMove(canvas(), { clientX: 110, clientY: 140 });
+        fireEvent.mouseUp(canvas());
+
+        expect(useCanvasStore.getState().shapes.get(0)?.from).toEqual({
+            x: 60,
+            y: 90,
+        });
+
+        fireEvent.keyDown(window, { key: "z", ctrlKey: true });
+
+        expect(useCanvasStore.getState().shapes.get(0)).toEqual(shape);
+    });
+
+    test("a click without dragging records no history", () => {
+        const shape = makeShape(0, { x: 0, y: 0 }, { x: 100, y: 100 });
+        useCanvasStore.getState().addShape(shape);
+        hit.inStroke = true;
+        render(<Canvas />);
+
+        fireEvent.mouseDown(canvas(), { clientX: 50, clientY: 50 });
+        fireEvent.mouseUp(canvas());
+
+        expect(useCanvasStore.getState().past.length).toEqual(1);
+
+        fireEvent.keyDown(window, { key: "z", ctrlKey: true });
+
+        expect(useCanvasStore.getState().shapes.size).toEqual(0);
+    });
+
     test("clears the selection when clicking empty space without shift", () => {
         const shape = makeShape(0, { x: 0, y: 0 }, { x: 100, y: 100 });
         useCanvasStore.getState().addShape(shape);
@@ -570,6 +609,52 @@ describe("Canvas", () => {
             rotation: 0,
         });
         expect(state.selectedIds).toEqual([1]);
+    });
+
+    test("undoes the last action with Ctrl+Z", () => {
+        const shape = makeShape(0, { x: 0, y: 0 }, { x: 100, y: 100 });
+        useCanvasStore.getState().addShape(shape);
+        render(<Canvas />);
+
+        fireEvent.keyDown(window, { key: "z", ctrlKey: true });
+
+        expect(useCanvasStore.getState().shapes.size).toEqual(0);
+    });
+
+    test("redoes an undone action with Ctrl+Shift+Z", () => {
+        const shape = makeShape(0, { x: 0, y: 0 }, { x: 100, y: 100 });
+        useCanvasStore.getState().addShape(shape);
+        render(<Canvas />);
+        fireEvent.keyDown(window, { key: "z", ctrlKey: true });
+
+        fireEvent.keyDown(window, {
+            key: "z",
+            ctrlKey: true,
+            shiftKey: true,
+        });
+
+        expect(useCanvasStore.getState().shapes.get(0)).toEqual(shape);
+    });
+
+    test("redoes an undone action with Ctrl+Y", () => {
+        const shape = makeShape(0, { x: 0, y: 0 }, { x: 100, y: 100 });
+        useCanvasStore.getState().addShape(shape);
+        render(<Canvas />);
+        fireEvent.keyDown(window, { key: "z", ctrlKey: true });
+
+        fireEvent.keyDown(window, { key: "y", ctrlKey: true });
+
+        expect(useCanvasStore.getState().shapes.get(0)).toEqual(shape);
+    });
+
+    test("treats Cmd+Z like Ctrl+Z", () => {
+        const shape = makeShape(0, { x: 0, y: 0 }, { x: 100, y: 100 });
+        useCanvasStore.getState().addShape(shape);
+        render(<Canvas />);
+
+        fireEvent.keyDown(window, { key: "z", metaKey: true });
+
+        expect(useCanvasStore.getState().shapes.size).toEqual(0);
     });
 
     test("treats Cmd shortcuts like Ctrl shortcuts", () => {

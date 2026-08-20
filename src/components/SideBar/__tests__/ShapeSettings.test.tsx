@@ -203,4 +203,85 @@ describe("ShapeSettings", () => {
             25
         );
     });
+
+    test("groups a slider drag into a single undo step", () => {
+        renderWithSelectedShape();
+        const width = screen.getByLabelText("Stroke width");
+        const pastLength = useCanvasStore.getState().past.length;
+
+        fireEvent.mouseDown(width);
+        fireEvent.change(width, { target: { value: "8" } });
+        fireEvent.change(width, { target: { value: "12" } });
+        fireEvent.change(width, { target: { value: "6" } });
+        fireEvent.mouseUp(width);
+
+        expect(useCanvasStore.getState().past.length).toEqual(pastLength + 1);
+
+        useCanvasStore.getState().undo();
+
+        expect(
+            useCanvasStore.getState().shapes.get(1)?.strokeWidth
+        ).toBeUndefined();
+    });
+
+    test("commits a color change on blur", () => {
+        renderWithSelectedShape();
+        const color = screen.getByLabelText("Stroke color");
+        const pastLength = useCanvasStore.getState().past.length;
+
+        fireEvent.focus(color);
+        fireEvent.change(color, { target: { value: "#ff0000" } });
+        fireEvent.blur(color);
+
+        expect(useCanvasStore.getState().past.length).toEqual(pastLength + 1);
+
+        useCanvasStore.getState().undo();
+
+        expect(
+            useCanvasStore.getState().shapes.get(1)?.strokeColor
+        ).toBeUndefined();
+    });
+
+    test("records a single undo step for a pattern click", () => {
+        renderWithSelectedShape();
+        const pastLength = useCanvasStore.getState().past.length;
+
+        fireEvent.click(screen.getByLabelText("Stroke pattern dashed"));
+
+        expect(useCanvasStore.getState().past.length).toEqual(pastLength + 1);
+
+        useCanvasStore.getState().undo();
+
+        expect(
+            useCanvasStore.getState().shapes.get(1)?.strokePattern
+        ).toBeUndefined();
+    });
+
+    test("records a single undo step for clearing the fill", () => {
+        renderWithSelectedShape(Tools.rect, { fillColor: "#ff0000" });
+        const pastLength = useCanvasStore.getState().past.length;
+
+        fireEvent.click(screen.getByLabelText("No fill"));
+
+        expect(useCanvasStore.getState().past.length).toEqual(pastLength + 1);
+    });
+
+    test("records no history when a control changes nothing", () => {
+        renderWithSelectedShape();
+        const color = screen.getByLabelText("Stroke color");
+        const pastLength = useCanvasStore.getState().past.length;
+
+        fireEvent.focus(color);
+        fireEvent.blur(color);
+
+        expect(useCanvasStore.getState().past.length).toEqual(pastLength);
+    });
+
+    test("records no history when a pattern is clicked with no selection", () => {
+        render(<ShapeSettings />);
+
+        fireEvent.click(screen.getByLabelText("Stroke pattern dashed"));
+
+        expect(useCanvasStore.getState().past.length).toEqual(0);
+    });
 });

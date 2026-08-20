@@ -712,4 +712,246 @@ describe("useCanvasStore", () => {
             expect(store().currentShape).toBeNull();
         });
     });
+
+    describe("undo", () => {
+        test("reverts the last change", () => {
+            const shape = makeShape(1, { x: 0, y: 0 }, { x: 10, y: 10 });
+            store().addShape(shape);
+
+            store().undo();
+
+            expect(store().shapes.size).toEqual(0);
+        });
+
+        test("moves the undone state into the future stack", () => {
+            const shape = makeShape(1, { x: 0, y: 0 }, { x: 10, y: 10 });
+            store().addShape(shape);
+
+            store().undo();
+
+            expect(store().future).toHaveLength(1);
+            expect(store().future[0].get(1)).toEqual(shape);
+        });
+
+        test("rebuilds the spatial index from the restored shapes", () => {
+            const shape = makeShape(1, { x: 0, y: 0 }, { x: 10, y: 10 });
+            store().addShape(shape);
+
+            store().undo();
+
+            expect(store().shapeIndex.all()).toEqual([]);
+
+            store().redo();
+
+            expect(store().shapeIndex.all()).toEqual([
+                { minX: 0, minY: 0, maxX: 10, maxY: 10, id: 1 },
+            ]);
+        });
+
+        test("clears the selection", () => {
+            const shape = makeShape(1, { x: 0, y: 0 }, { x: 10, y: 10 });
+            store().addShape(shape);
+            store().setSelectedIds([1]);
+
+            store().undo();
+
+            expect(store().selectedIds).toEqual([]);
+        });
+
+        test("is a no-op when there is no history", () => {
+            store().undo();
+
+            expect(store().shapes.size).toEqual(0);
+            expect(store().past).toEqual([]);
+            expect(store().future).toEqual([]);
+        });
+
+        test("restores deleted shapes", () => {
+            const shape1 = makeShape(1, { x: 0, y: 0 }, { x: 10, y: 10 });
+            const shape2 = makeShape(2, { x: 20, y: 20 }, { x: 30, y: 30 });
+            store().addShape(shape1);
+            store().addShape(shape2);
+            store().deleteShapes([1]);
+
+            store().undo();
+
+            expect(store().shapes.has(1)).toBe(true);
+            expect(store().shapes.has(2)).toBe(true);
+            expect(
+                store()
+                    .shapeIndex.all()
+                    .map(item => item.id)
+                    .sort()
+            ).toEqual([1, 2]);
+        });
+
+        test("reverts style changes", () => {
+            const shape = makeShape(1, { x: 0, y: 0 }, { x: 10, y: 10 });
+            store().addShape(shape);
+            store().setSelectedIds([1]);
+            const snapshot = store().shapes;
+            store().updateSelectedShapes({
+                strokeWidth: 8,
+                strokeColor: "#f00",
+            });
+            store().commitHistory(snapshot);
+
+            store().undo();
+
+            expect(store().shapes.get(1)?.strokeWidth).toBeUndefined();
+            expect(store().shapes.get(1)?.strokeColor).toBeUndefined();
+        });
+
+        test("reverts pasted and duplicated shapes", () => {
+            const shape = makeShape(1, { x: 0, y: 0 }, { x: 10, y: 10 });
+            store().addShape(shape);
+            store().setSelectedIds([1]);
+            store().copySelectedShapes();
+
+            store().pasteShapes({ x: 100, y: 100 });
+            expect(store().shapes.size).toEqual(2);
+            store().undo();
+            expect(store().shapes.size).toEqual(1);
+
+            store().setSelectedIds([1]);
+            store().duplicateSelectedShapes();
+            expect(store().shapes.size).toEqual(2);
+            store().undo();
+            expect(store().shapes.size).toEqual(1);
+        });
+
+        test("does not record history for no-op updates", () => {
+            const shape = makeShape(1, { x: 0, y: 0 }, { x: 10, y: 10 });
+            store().addShape(shape);
+
+            store().updateShape(999, { to: { x: 50, y: 50 } });
+
+            expect(store().past).toHaveLength(1);
+        });
+    });
+
+    describe("redo", () => {
+        test("re-applies an undone change", () => {
+            const shape = makeShape(1, { x: 0, y: 0 }, { x: 10, y: 10 });
+            store().addShape(shape);
+            store().undo();
+
+            store().redo();
+
+            expect(store().shapes.get(1)).toEqual(shape);
+        });
+
+        test("is a no-op when there is nothing to redo", () => {
+            const shape = makeShape(1, { x: 0, y: 0 }, { x: 10, y: 10 });
+            store().addShape(shape);
+
+            store().redo();
+
+            expect(store().shapes.size).toEqual(1);
+        });
+
+        test("clears the redo stack when a new change happens", () => {
+            const shape1 = makeShape(1, { x: 0, y: 0 }, { x: 10, y: 10 });
+            const shape2 = makeShape(2, { x: 20, y: 20 }, { x: 30, y: 30 });
+            store().addShape(shape1);
+            store().undo();
+            expect(store().future).toHaveLength(1);
+
+            store().addShape(shape2);
+
+            expect(store().future).toEqual([]);
+            store().redo();
+            expect(store().shapes.get(2)).toEqual(shape2);
+        });
+
+        test("clears the selection", () => {
+            const shape = makeShape(1, { x: 0, y: 0 }, { x: 10, y: 10 });
+            store().addShape(shape);
+            store().setSelectedIds([1]);
+            store().undo();
+            store().setSelectedIds([1]);
+
+            store().redo();
+
+            expect(store().selectedIds).toEqual([]);
+        });
+    });
+
+    describe("gesture mutations and commitHistory", () => {
+        test("moveSelectedShapes does not record history directly", () => {
+            const shape = makeShape(1, { x: 0, y: 0 }, { x: 10, y: 10 });
+            store().addShape(shape);
+            store().setSelectedIds([1]);
+            const pastLength = store().past.length;
+
+            store().moveSelectedShapes(5, 5);
+            store().moveSelectedShapes(3, 3);
+
+            expect(store().past.length - pastLength).toEqual(0);
+        });
+
+        test("updateShape does not record history directly", () => {
+            const shape = makeShape(1, { x: 0, y: 0 }, { x: 10, y: 10 });
+            store().addShape(shape);
+            const pastLength = store().past.length;
+
+            store().updateShape(1, { rotation: Math.PI / 2 });
+
+            expect(store().past.length - pastLength).toEqual(0);
+        });
+
+        test("updateSelectedShapes does not record history directly", () => {
+            const shape = makeShape(1, { x: 0, y: 0 }, { x: 10, y: 10 });
+            store().addShape(shape);
+            store().setSelectedIds([1]);
+            const pastLength = store().past.length;
+
+            store().updateSelectedShapes({ strokeWidth: 8 });
+
+            expect(store().past.length - pastLength).toEqual(0);
+        });
+
+        test("commitHistory pushes a snapshot and clears the redo stack", () => {
+            const shape1 = makeShape(1, { x: 0, y: 0 }, { x: 10, y: 10 });
+            const shape2 = makeShape(2, { x: 20, y: 20 }, { x: 30, y: 30 });
+            store().addShape(shape1);
+            store().addShape(shape2);
+            store().undo();
+            expect(store().future).toHaveLength(1);
+            const pastLength = store().past.length;
+
+            store().commitHistory(new Map(store().shapes));
+
+            expect(store().future).toEqual([]);
+            expect(store().past).toHaveLength(pastLength + 1);
+        });
+
+        test("undo after commitHistory restores the committed snapshot", () => {
+            const shape = makeShape(1, { x: 0, y: 0 }, { x: 10, y: 10 });
+            store().addShape(shape);
+            store().setSelectedIds([1]);
+
+            const snapshot = store().shapes;
+            store().moveSelectedShapes(5, 5);
+            store().moveSelectedShapes(3, 3);
+            store().commitHistory(snapshot);
+
+            store().undo();
+
+            expect(store().shapes.get(1)).toEqual(shape);
+        });
+    });
+
+    describe("history and reset", () => {
+        test("reset clears the history stacks", () => {
+            const shape = makeShape(1, { x: 0, y: 0 }, { x: 10, y: 10 });
+            store().addShape(shape);
+            store().undo();
+
+            store().reset();
+
+            expect(store().past).toEqual([]);
+            expect(store().future).toEqual([]);
+        });
+    });
 });
