@@ -1,3 +1,4 @@
+import { useRef } from "react";
 import { useCanvasStore } from "@stores/useCanvasStore";
 import { DEFAULT_CORNER_RADIUS, DEFAULT_STROKE } from "@/utils/shapes";
 import { Tools, type Shape, type StrokePattern } from "@/types";
@@ -6,6 +7,29 @@ const PATTERNS: StrokePattern[] = ["solid", "dashed", "dotted"];
 
 export default function ShapeSettings() {
     const { shapes, selectedIds, updateSelectedShapes } = useCanvasStore();
+    const pendingSnapshotRef = useRef<Map<number, Shape> | null>(null);
+
+    const beginCapture = () => {
+        pendingSnapshotRef.current = useCanvasStore.getState().shapes;
+    };
+
+    const commitCapture = () => {
+        const snapshot = pendingSnapshotRef.current;
+        pendingSnapshotRef.current = null;
+        if (!snapshot) return;
+        if (
+            JSON.stringify([...snapshot]) !==
+            JSON.stringify([...useCanvasStore.getState().shapes])
+        ) {
+            useCanvasStore.getState().commitHistory(snapshot);
+        }
+    };
+
+    const handleButtonCommit = (updates: Partial<Shape>) => {
+        beginCapture();
+        updateSelectedShapes(updates);
+        commitCapture();
+    };
 
     const selectedShapes = selectedIds
         .map(id => shapes.get(id))
@@ -51,6 +75,10 @@ export default function ShapeSettings() {
                         value={width}
                         disabled={isDisabled}
                         aria-label="Stroke width"
+                        onMouseDown={beginCapture}
+                        onMouseUp={commitCapture}
+                        onFocus={beginCapture}
+                        onBlur={commitCapture}
                         onChange={e =>
                             updateSelectedShapes({
                                 strokeWidth: Number(e.target.value),
@@ -70,7 +98,7 @@ export default function ShapeSettings() {
                                 aria-label={`Stroke pattern ${p}`}
                                 className={`px-2 py-1 text-xs rounded-md capitalize ${pattern === p ? "bg-gray-500 text-white" : "bg-gray-700 text-gray-300"}`}
                                 onClick={() =>
-                                    updateSelectedShapes({ strokePattern: p })
+                                    handleButtonCommit({ strokePattern: p })
                                 }>
                                 {p}
                             </button>
@@ -86,6 +114,8 @@ export default function ShapeSettings() {
                         disabled={isDisabled}
                         aria-label="Stroke color"
                         className="h-8 w-full cursor-pointer rounded-md bg-gray-700 p-1"
+                        onFocus={beginCapture}
+                        onBlur={commitCapture}
                         onChange={e =>
                             updateSelectedShapes({
                                 strokeColor: e.target.value,
@@ -105,6 +135,8 @@ export default function ShapeSettings() {
                     disabled={isDisabled}
                     aria-label="Fill color"
                     className="h-8 w-full cursor-pointer rounded-md bg-gray-700 p-1"
+                    onFocus={beginCapture}
+                    onBlur={commitCapture}
                     onChange={e =>
                         updateSelectedShapes({ fillColor: e.target.value })
                     }
@@ -115,7 +147,7 @@ export default function ShapeSettings() {
                     aria-label="No fill"
                     className={`shrink-0 px-2 py-1 text-xs rounded-md capitalize ${fillColor ? "bg-gray-700 text-gray-300" : "bg-gray-500 text-white"}`}
                     onClick={() =>
-                        updateSelectedShapes({ fillColor: undefined })
+                        handleButtonCommit({ fillColor: undefined })
                     }>
                     None
                 </button>
@@ -137,6 +169,10 @@ export default function ShapeSettings() {
                             max={50}
                             value={cornerRadius}
                             aria-label="Corner radius"
+                            onMouseDown={beginCapture}
+                            onMouseUp={commitCapture}
+                            onFocus={beginCapture}
+                            onBlur={commitCapture}
                             onChange={e =>
                                 updateSelectedShapes({
                                     cornerRadius: Number(e.target.value),
