@@ -35,6 +35,7 @@ const HANDLES_CURSORS: Record<Handles, string> = {
 export default function Canvas() {
     const canvasRef = useRef<HTMLCanvasElement | null>(null);
     const cursorWorldPosRef = useRef<Point | null>(null);
+    const gestureStartShapesRef = useRef<Map<number, Shape> | null>(null);
     const [currentHandle, setCurrentHandle] = useState<Handles | null>(null);
     const [isResizing, setIsResizing] = useState(false);
     const [isRotating, setIsRotating] = useState(false);
@@ -75,6 +76,9 @@ export default function Canvas() {
         pasteShapes,
         duplicateSelectedShapes,
         getNextId,
+        undo,
+        redo,
+        commitHistory,
     } = useCanvasStore();
 
     const selectedShapes = useMemo(
@@ -339,6 +343,8 @@ export default function Canvas() {
                     const handleHit = getHandleAt(pos);
                     if (handleHit) {
                         if (handleHit === "rotate") {
+                            gestureStartShapesRef.current =
+                                useCanvasStore.getState().shapes;
                             setCurrentHandle("rotate");
                             setIsRotating(true);
                             setRotateStart(cursorWorldPos);
@@ -346,6 +352,8 @@ export default function Canvas() {
                             return;
                         }
 
+                        gestureStartShapesRef.current =
+                            useCanvasStore.getState().shapes;
                         setCurrentHandle(handleHit);
                         setIsResizing(true);
                         setResizeStart(selectedShapes);
@@ -355,6 +363,8 @@ export default function Canvas() {
                     const hitId = hitTest(cursorWorldPos);
 
                     if (hitId !== null) {
+                        gestureStartShapesRef.current =
+                            useCanvasStore.getState().shapes;
                         const isAlreadySelected = selectedIds.includes(hitId);
                         if (e.shiftKey) {
                             toggleSelectedIds(hitId, true);
@@ -561,7 +571,17 @@ export default function Canvas() {
 
             if (e.ctrlKey || e.metaKey) {
                 const key = e.key.toLowerCase();
-                if (key === "c") {
+                if (key === "z") {
+                    if (e.shiftKey) {
+                        redo();
+                    } else {
+                        undo();
+                    }
+                    e.preventDefault();
+                } else if (key === "y") {
+                    redo();
+                    e.preventDefault();
+                } else if (key === "c") {
                     copySelectedShapes();
                     e.preventDefault();
                 } else if (key === "v") {
@@ -590,6 +610,8 @@ export default function Canvas() {
         duplicateSelectedShapes,
         pasteShapes,
         getPosCompareToWorld,
+        undo,
+        redo,
     ]);
 
     useEffect(() => {
@@ -599,6 +621,17 @@ export default function Canvas() {
     }, [tool, setSelectedIds]);
 
     const handleMouseUp = useCallback(() => {
+        const startShapes = gestureStartShapesRef.current;
+        gestureStartShapesRef.current = null;
+        if (startShapes) {
+            const currentShapes = useCanvasStore.getState().shapes;
+            if (
+                JSON.stringify([...startShapes]) !==
+                JSON.stringify([...currentShapes])
+            ) {
+                commitHistory(startShapes);
+            }
+        }
         setIsDragging(false);
         setIsPanning(false);
 
@@ -646,6 +679,7 @@ export default function Canvas() {
         setStartWorldPos,
         addShape,
         setCurrentShape,
+        commitHistory,
     ]);
 
     const handleWheel: React.WheelEventHandler<HTMLCanvasElement> = useCallback(
