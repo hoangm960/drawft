@@ -31,6 +31,8 @@ interface CanvasState {
     scale: number;
     lastPos: Point;
     startWorldPos: Point | null;
+    past: Map<number, Shape>[];
+    future: Map<number, Shape>[];
 }
 
 interface CanvasActions {
@@ -56,6 +58,9 @@ interface CanvasActions {
     moveSelectedShapes: (dx: number, dy: number) => void;
     selectShapesInBox: () => void;
     getNextId: () => number;
+    undo: () => void;
+    redo: () => void;
+    commitHistory: (snapshot: Map<number, Shape>) => void;
     reset: () => void;
 }
 
@@ -64,6 +69,22 @@ function shapeBBox(shape: Shape): ShapeBBox {
 }
 
 const sameBBoxId = (a: ShapeBBox, b: ShapeBBox) => a.id === b.id;
+
+const cloneShapesMap = (shapes: Map<number, Shape>): Map<number, Shape> =>
+    new Map(
+        [...shapes].map(([id, shape]) => [
+            id,
+            { ...shape, from: { ...shape.from }, to: { ...shape.to } },
+        ])
+    );
+
+const rebuildShapeIndex = (shapes: Map<number, Shape>): RBush<ShapeBBox> => {
+    const index = new RBush<ShapeBBox>();
+    for (const shape of shapes.values()) {
+        index.insert(shapeBBox(shape));
+    }
+    return index;
+};
 
 const cloneShapes = (
     state: CanvasState & CanvasActions,
@@ -88,6 +109,13 @@ const cloneShapes = (
     return { shapes: newShapes, ids };
 };
 
+const recordHistory = (
+    get: () => CanvasState & CanvasActions,
+    set: (partial: Partial<CanvasState & CanvasActions>) => void
+) => {
+    set({ past: [...get().past, cloneShapesMap(get().shapes)], future: [] });
+};
+
 function createInitialState(): CanvasState {
     return {
         shapes: new Map(),
@@ -103,6 +131,8 @@ function createInitialState(): CanvasState {
         scale: 1,
         lastPos: { x: 0, y: 0 },
         startWorldPos: null,
+        past: [],
+        future: [],
     };
 }
 
@@ -122,6 +152,7 @@ export const useCanvasStore = create<CanvasState & CanvasActions>(
         },
 
         addShape: shape => {
+            recordHistory(get, set);
             const newShapes = new Map(get().shapes);
             newShapes.set(shape.id, shape);
 
@@ -165,6 +196,8 @@ export const useCanvasStore = create<CanvasState & CanvasActions>(
 
         deleteShapes: ids => {
             const state = get();
+            if (ids.length === 0) return;
+            recordHistory(get, set);
             const newShapes = new Map(state.shapes);
             for (const id of ids) {
                 const shape = newShapes.get(id);
@@ -212,6 +245,7 @@ export const useCanvasStore = create<CanvasState & CanvasActions>(
                 target.x - center.x,
                 target.y - center.y
             );
+            recordHistory(get, set);
             set({ shapes, selectedIds: ids });
         },
 
@@ -221,6 +255,8 @@ export const useCanvasStore = create<CanvasState & CanvasActions>(
                 .map(id => state.shapes.get(id))
                 .filter((s): s is Shape => s !== undefined);
             if (selected.length === 0) return;
+
+            recordHistory(get, set);
 
             const { shapes, ids } = cloneShapes(
                 state,
@@ -300,6 +336,39 @@ export const useCanvasStore = create<CanvasState & CanvasActions>(
 
             const selected = found.map(item => item.id as number);
             set({ selectedIds: selected });
+        },
+
+        undo: () => {
+            const state = get();
+            if (state.past.length === 0) return;
+
+            const previous = state.past[state.past.length - 1];
+            set({
+                past: state.past.slice(0, -1),
+                future: [...state.future, cloneShapesMap(state.shapes)],
+                shapes: previous,
+                shapeIndex: rebuildShapeIndex(previous),
+                selectedIds: [],
+            });
+        },
+
+        redo: () => {
+            const state = get();
+            if (state.future.length === 0) return;
+
+            const next = state.future[state.future.length - 1];
+            set({
+                future: state.future.slice(0, -1),
+                past: [...state.past, cloneShapesMap(state.shapes)],
+                shapes: next,
+                shapeIndex: rebuildShapeIndex(next),
+                selectedIds: [],
+            });
+        },
+
+        commitHistory: snapshot => {
+            const state = get();
+            set({ past: [...state.past, snapshot], future: [] });
         },
 
         reset: () => set(createInitialState()),
