@@ -44,7 +44,8 @@ describe("Sidebar", () => {
 
     test("shows the corner radius control when a rect is selected", () => {
         const store = useCanvasStore.getState();
-        store.addShape(makeShape(1, { x: 0, y: 0 }, { x: 10, y: 10 }));
+        const shape = makeShape(1, { x: 0, y: 0 }, { x: 10, y: 10 });
+        store.addShape(shape);
         store.setSelectedIds([1]);
 
         render(<Sidebar />);
@@ -54,9 +55,13 @@ describe("Sidebar", () => {
 
     test("hides the corner radius control when a line is selected", () => {
         const store = useCanvasStore.getState();
-        store.addShape(
-            makeShape(1, { x: 0, y: 0 }, { x: 10, y: 10 }, Tools.line)
+        const shape = makeShape(
+            1,
+            { x: 0, y: 0 },
+            { x: 10, y: 10 },
+            Tools.line
         );
+        store.addShape(shape);
         store.setSelectedIds([1]);
 
         render(<Sidebar />);

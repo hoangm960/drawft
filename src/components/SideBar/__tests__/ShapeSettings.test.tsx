@@ -174,10 +174,15 @@ describe("ShapeSettings", () => {
 
     test("hides the corner radius control when the selection mixes shapes", () => {
         const store = useCanvasStore.getState();
-        store.addShape(makeShape(1, { x: 0, y: 0 }, { x: 10, y: 10 }));
-        store.addShape(
-            makeShape(2, { x: 20, y: 0 }, { x: 30, y: 10 }, Tools.line)
+        const shape1 = makeShape(1, { x: 0, y: 0 }, { x: 10, y: 10 });
+        const shape2 = makeShape(
+            2,
+            { x: 20, y: 0 },
+            { x: 30, y: 10 },
+            Tools.line
         );
+        store.addShape(shape1);
+        store.addShape(shape2);
         store.setSelectedIds([1, 2]);
 
         render(<ShapeSettings />);

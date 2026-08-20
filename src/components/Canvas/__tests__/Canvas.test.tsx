@@ -122,12 +122,10 @@ describe("Canvas", () => {
     });
 
     test("box-selects shapes drawn through the selection area", () => {
-        useCanvasStore
-            .getState()
-            .addShape(makeShape(0, { x: 0, y: 0 }, { x: 100, y: 100 }));
-        useCanvasStore
-            .getState()
-            .addShape(makeShape(1, { x: 150, y: 150 }, { x: 250, y: 250 }));
+        const shape1 = makeShape(0, { x: 0, y: 0 }, { x: 100, y: 100 });
+        const shape2 = makeShape(1, { x: 150, y: 150 }, { x: 250, y: 250 });
+        useCanvasStore.getState().addShape(shape1);
+        useCanvasStore.getState().addShape(shape2);
         render(<Canvas />);
 
         fireEvent.mouseDown(canvas(), { clientX: 50, clientY: 50 });
@@ -140,9 +138,8 @@ describe("Canvas", () => {
     });
 
     test("selects a shape when clicked on it", () => {
-        useCanvasStore
-            .getState()
-            .addShape(makeShape(0, { x: 0, y: 0 }, { x: 100, y: 100 }));
+        const shape = makeShape(0, { x: 0, y: 0 }, { x: 100, y: 100 });
+        useCanvasStore.getState().addShape(shape);
         hit.inStroke = true;
         render(<Canvas />);
 
@@ -152,9 +149,8 @@ describe("Canvas", () => {
     });
 
     test("resizes a selected shape by dragging a corner handle", () => {
-        useCanvasStore
-            .getState()
-            .addShape(makeShape(0, { x: 0, y: 0 }, { x: 100, y: 100 }));
+        const shape = makeShape(0, { x: 0, y: 0 }, { x: 100, y: 100 });
+        useCanvasStore.getState().addShape(shape);
         useCanvasStore.getState().setSelectedIds([0]);
         render(<Canvas />);
 
@@ -172,9 +168,8 @@ describe("Canvas", () => {
     });
 
     test("mirrors the shape when dragging a handle past the opposite edge", () => {
-        useCanvasStore
-            .getState()
-            .addShape(makeShape(0, { x: 0, y: 0 }, { x: 100, y: 100 }));
+        const shape = makeShape(0, { x: 0, y: 0 }, { x: 100, y: 100 });
+        useCanvasStore.getState().addShape(shape);
         useCanvasStore.getState().setSelectedIds([0]);
         render(<Canvas />);
 
@@ -192,9 +187,8 @@ describe("Canvas", () => {
     });
 
     test("keeps the dragged corner glued across multiple flips", () => {
-        useCanvasStore
-            .getState()
-            .addShape(makeShape(0, { x: 0, y: 0 }, { x: 100, y: 100 }));
+        const shape = makeShape(0, { x: 0, y: 0 }, { x: 100, y: 100 });
+        useCanvasStore.getState().addShape(shape);
         useCanvasStore.getState().setSelectedIds([0]);
         render(<Canvas />);
 
@@ -213,11 +207,13 @@ describe("Canvas", () => {
     });
 
     test("resizes an arrow from its to endpoint handle", () => {
-        useCanvasStore
-            .getState()
-            .addShape(
-                makeShape(0, { x: 0, y: 0 }, { x: 100, y: 0 }, Tools.arrow)
-            );
+        const arrow = makeShape(
+            0,
+            { x: 0, y: 0 },
+            { x: 100, y: 0 },
+            Tools.arrow
+        );
+        useCanvasStore.getState().addShape(arrow);
         useCanvasStore.getState().setSelectedIds([0]);
         render(<Canvas />);
 
@@ -235,12 +231,10 @@ describe("Canvas", () => {
     });
 
     test("resizes multiple selected shapes as a group", () => {
-        useCanvasStore
-            .getState()
-            .addShape(makeShape(0, { x: 0, y: 0 }, { x: 100, y: 100 }));
-        useCanvasStore
-            .getState()
-            .addShape(makeShape(1, { x: 150, y: 150 }, { x: 200, y: 200 }));
+        const shape1 = makeShape(0, { x: 0, y: 0 }, { x: 100, y: 100 });
+        const shape2 = makeShape(1, { x: 150, y: 150 }, { x: 200, y: 200 });
+        useCanvasStore.getState().addShape(shape1);
+        useCanvasStore.getState().addShape(shape2);
         useCanvasStore.getState().setSelectedIds([0, 1]);
         render(<Canvas />);
 
@@ -265,9 +259,8 @@ describe("Canvas", () => {
     });
 
     test("deletes the selected shape with the Delete key", () => {
-        useCanvasStore
-            .getState()
-            .addShape(makeShape(0, { x: 0, y: 0 }, { x: 100, y: 100 }));
+        const shape = makeShape(0, { x: 0, y: 0 }, { x: 100, y: 100 });
+        useCanvasStore.getState().addShape(shape);
         useCanvasStore.getState().setSelectedIds([0]);
         render(<Canvas />);
 
@@ -277,9 +270,8 @@ describe("Canvas", () => {
     });
 
     test("clears the selection after deleting with the Delete key", () => {
-        useCanvasStore
-            .getState()
-            .addShape(makeShape(0, { x: 0, y: 0 }, { x: 100, y: 100 }));
+        const shape = makeShape(0, { x: 0, y: 0 }, { x: 100, y: 100 });
+        useCanvasStore.getState().addShape(shape);
         useCanvasStore.getState().setSelectedIds([0]);
         render(<Canvas />);
 
@@ -289,9 +281,8 @@ describe("Canvas", () => {
     });
 
     test("deletes the selected shape with the Backspace key", () => {
-        useCanvasStore
-            .getState()
-            .addShape(makeShape(0, { x: 0, y: 0 }, { x: 100, y: 100 }));
+        const shape = makeShape(0, { x: 0, y: 0 }, { x: 100, y: 100 });
+        useCanvasStore.getState().addShape(shape);
         useCanvasStore.getState().setSelectedIds([0]);
         render(<Canvas />);
 
@@ -332,12 +323,10 @@ describe("Canvas", () => {
     });
 
     test("selects a shape on click", () => {
-        useCanvasStore
-            .getState()
-            .addShape(makeShape(0, { x: 0, y: 0 }, { x: 100, y: 100 }));
-        useCanvasStore
-            .getState()
-            .addShape(makeShape(1, { x: 150, y: 150 }, { x: 250, y: 250 }));
+        const shape1 = makeShape(0, { x: 0, y: 0 }, { x: 100, y: 100 });
+        const shape2 = makeShape(1, { x: 150, y: 150 }, { x: 250, y: 250 });
+        useCanvasStore.getState().addShape(shape1);
+        useCanvasStore.getState().addShape(shape2);
         hit.inStroke = true;
         render(<Canvas />);
 
@@ -347,12 +336,10 @@ describe("Canvas", () => {
     });
 
     test("deselects a selected shape on shift+click", () => {
-        useCanvasStore
-            .getState()
-            .addShape(makeShape(0, { x: 0, y: 0 }, { x: 100, y: 100 }));
-        useCanvasStore
-            .getState()
-            .addShape(makeShape(1, { x: 150, y: 150 }, { x: 250, y: 250 }));
+        const shape1 = makeShape(0, { x: 0, y: 0 }, { x: 100, y: 100 });
+        const shape2 = makeShape(1, { x: 150, y: 150 }, { x: 250, y: 250 });
+        useCanvasStore.getState().addShape(shape1);
+        useCanvasStore.getState().addShape(shape2);
         useCanvasStore.getState().setSelectedIds([1]);
         hit.inStroke = true;
         render(<Canvas />);
@@ -367,12 +354,10 @@ describe("Canvas", () => {
     });
 
     test("selects a shape on shift+click when the selection is empty", () => {
-        useCanvasStore
-            .getState()
-            .addShape(makeShape(0, { x: 0, y: 0 }, { x: 100, y: 100 }));
-        useCanvasStore
-            .getState()
-            .addShape(makeShape(1, { x: 150, y: 150 }, { x: 250, y: 250 }));
+        const shape1 = makeShape(0, { x: 0, y: 0 }, { x: 100, y: 100 });
+        const shape2 = makeShape(1, { x: 150, y: 150 }, { x: 250, y: 250 });
+        useCanvasStore.getState().addShape(shape1);
+        useCanvasStore.getState().addShape(shape2);
         hit.inStroke = true;
         render(<Canvas />);
 
@@ -386,9 +371,8 @@ describe("Canvas", () => {
     });
 
     test("moves a selected shape by dragging it", () => {
-        useCanvasStore
-            .getState()
-            .addShape(makeShape(0, { x: 0, y: 0 }, { x: 100, y: 100 }));
+        const shape = makeShape(0, { x: 0, y: 0 }, { x: 100, y: 100 });
+        useCanvasStore.getState().addShape(shape);
         useCanvasStore.getState().setSelectedIds([0]);
         hit.inStroke = true;
         render(<Canvas />);
@@ -407,9 +391,8 @@ describe("Canvas", () => {
     });
 
     test("clears the selection when clicking empty space without shift", () => {
-        useCanvasStore
-            .getState()
-            .addShape(makeShape(0, { x: 0, y: 0 }, { x: 100, y: 100 }));
+        const shape = makeShape(0, { x: 0, y: 0 }, { x: 100, y: 100 });
+        useCanvasStore.getState().addShape(shape);
         useCanvasStore.getState().setSelectedIds([0]);
         hit.inStroke = false;
         render(<Canvas />);
@@ -421,9 +404,8 @@ describe("Canvas", () => {
     });
 
     test("keeps the selection when shift+clicking empty space", () => {
-        useCanvasStore
-            .getState()
-            .addShape(makeShape(0, { x: 0, y: 0 }, { x: 100, y: 100 }));
+        const shape = makeShape(0, { x: 0, y: 0 }, { x: 100, y: 100 });
+        useCanvasStore.getState().addShape(shape);
         useCanvasStore.getState().setSelectedIds([0]);
         hit.inStroke = false;
         render(<Canvas />);
@@ -439,9 +421,8 @@ describe("Canvas", () => {
     });
 
     test("shows a grab cursor when hovering the rotate handle", () => {
-        useCanvasStore
-            .getState()
-            .addShape(makeShape(0, { x: 0, y: 0 }, { x: 100, y: 100 }));
+        const shape = makeShape(0, { x: 0, y: 0 }, { x: 100, y: 100 });
+        useCanvasStore.getState().addShape(shape);
         useCanvasStore.getState().setSelectedIds([0]);
         render(<Canvas />);
 
@@ -451,9 +432,8 @@ describe("Canvas", () => {
     });
 
     test("clears the cursor when the mouse leaves the canvas", () => {
-        useCanvasStore
-            .getState()
-            .addShape(makeShape(0, { x: 0, y: 0 }, { x: 100, y: 100 }));
+        const shape = makeShape(0, { x: 0, y: 0 }, { x: 100, y: 100 });
+        useCanvasStore.getState().addShape(shape);
         useCanvasStore.getState().setSelectedIds([0]);
         render(<Canvas />);
 
@@ -464,9 +444,8 @@ describe("Canvas", () => {
     });
 
     test("shows a resize cursor when hovering a corner handle", () => {
-        useCanvasStore
-            .getState()
-            .addShape(makeShape(0, { x: 0, y: 0 }, { x: 100, y: 100 }));
+        const shape = makeShape(0, { x: 0, y: 0 }, { x: 100, y: 100 });
+        useCanvasStore.getState().addShape(shape);
         useCanvasStore.getState().setSelectedIds([0]);
         render(<Canvas />);
 
@@ -475,9 +454,8 @@ describe("Canvas", () => {
     });
 
     test("rotates a selected shape by dragging the rotate handle", () => {
-        useCanvasStore
-            .getState()
-            .addShape(makeShape(0, { x: 0, y: 0 }, { x: 100, y: 100 }));
+        const shape = makeShape(0, { x: 0, y: 0 }, { x: 100, y: 100 });
+        useCanvasStore.getState().addShape(shape);
         useCanvasStore.getState().setSelectedIds([0]);
         render(<Canvas />);
 
@@ -485,19 +463,17 @@ describe("Canvas", () => {
         fireEvent.mouseMove(canvas(), { clientX: 100, clientY: 50 });
         fireEvent.mouseUp(canvas());
 
-        const shape = useCanvasStore.getState().shapes.get(0)!;
-        expect(shape.rotation).toBeCloseTo(Math.PI / 2);
-        expect(shape.from).toEqual({ x: 0, y: 0 });
-        expect(shape.to).toEqual({ x: 100, y: 100 });
+        const rotated = useCanvasStore.getState().shapes.get(0)!;
+        expect(rotated.rotation).toBeCloseTo(Math.PI / 2);
+        expect(rotated.from).toEqual({ x: 0, y: 0 });
+        expect(rotated.to).toEqual({ x: 100, y: 100 });
     });
 
     test("box-selects shapes when dragging outside the canvas", () => {
-        useCanvasStore
-            .getState()
-            .addShape(makeShape(0, { x: 0, y: 0 }, { x: 100, y: 100 }));
-        useCanvasStore
-            .getState()
-            .addShape(makeShape(1, { x: 150, y: 150 }, { x: 250, y: 250 }));
+        const shape1 = makeShape(0, { x: 0, y: 0 }, { x: 100, y: 100 });
+        const shape2 = makeShape(1, { x: 150, y: 150 }, { x: 250, y: 250 });
+        useCanvasStore.getState().addShape(shape1);
+        useCanvasStore.getState().addShape(shape2);
         render(<Canvas />);
 
         fireEvent.mouseDown(canvas(), { clientX: 50, clientY: 50 });
@@ -510,9 +486,8 @@ describe("Canvas", () => {
     });
 
     test("does nothing when pressing Delete with no selection", () => {
-        useCanvasStore
-            .getState()
-            .addShape(makeShape(0, { x: 0, y: 0 }, { x: 100, y: 100 }));
+        const shape = makeShape(0, { x: 0, y: 0 }, { x: 100, y: 100 });
+        useCanvasStore.getState().addShape(shape);
         render(<Canvas />);
 
         fireEvent.keyDown(window, { key: "Delete" });
@@ -521,9 +496,8 @@ describe("Canvas", () => {
     });
 
     test("copies the selected shapes with Ctrl+C", () => {
-        useCanvasStore
-            .getState()
-            .addShape(makeShape(0, { x: 0, y: 0 }, { x: 100, y: 100 }));
+        const shape = makeShape(0, { x: 0, y: 0 }, { x: 100, y: 100 });
+        useCanvasStore.getState().addShape(shape);
         useCanvasStore.getState().setSelectedIds([0]);
         render(<Canvas />);
 
@@ -541,9 +515,8 @@ describe("Canvas", () => {
     });
 
     test("pastes the clipboard at the cursor with Ctrl+V and selects the pasted shape", () => {
-        useCanvasStore
-            .getState()
-            .addShape(makeShape(0, { x: 0, y: 0 }, { x: 100, y: 100 }));
+        const shape = makeShape(0, { x: 0, y: 0 }, { x: 100, y: 100 });
+        useCanvasStore.getState().addShape(shape);
         useCanvasStore.getState().setSelectedIds([0]);
         render(<Canvas />);
         fireEvent.keyDown(window, { key: "c", ctrlKey: true });
@@ -564,9 +537,8 @@ describe("Canvas", () => {
     });
 
     test("pastes at the viewport center when the cursor is unknown", () => {
-        useCanvasStore
-            .getState()
-            .addShape(makeShape(0, { x: 0, y: 0 }, { x: 100, y: 100 }));
+        const shape = makeShape(0, { x: 0, y: 0 }, { x: 100, y: 100 });
+        useCanvasStore.getState().addShape(shape);
         useCanvasStore.getState().setSelectedIds([0]);
         window.innerWidth = 400;
         window.innerHeight = 300;
@@ -581,9 +553,8 @@ describe("Canvas", () => {
     });
 
     test("duplicates the selected shape with Ctrl+D", () => {
-        useCanvasStore
-            .getState()
-            .addShape(makeShape(0, { x: 0, y: 0 }, { x: 100, y: 100 }));
+        const shape = makeShape(0, { x: 0, y: 0 }, { x: 100, y: 100 });
+        useCanvasStore.getState().addShape(shape);
         useCanvasStore.getState().setSelectedIds([0]);
         render(<Canvas />);
 
@@ -602,9 +573,8 @@ describe("Canvas", () => {
     });
 
     test("treats Cmd shortcuts like Ctrl shortcuts", () => {
-        useCanvasStore
-            .getState()
-            .addShape(makeShape(0, { x: 0, y: 0 }, { x: 100, y: 100 }));
+        const shape = makeShape(0, { x: 0, y: 0 }, { x: 100, y: 100 });
+        useCanvasStore.getState().addShape(shape);
         useCanvasStore.getState().setSelectedIds([0]);
         render(<Canvas />);
 
@@ -619,9 +589,8 @@ describe("Canvas", () => {
     });
 
     test("does nothing on copy with no selection", () => {
-        useCanvasStore
-            .getState()
-            .addShape(makeShape(0, { x: 0, y: 0 }, { x: 100, y: 100 }));
+        const shape = makeShape(0, { x: 0, y: 0 }, { x: 100, y: 100 });
+        useCanvasStore.getState().addShape(shape);
         render(<Canvas />);
 
         fireEvent.keyDown(window, { key: "c", ctrlKey: true });
@@ -638,9 +607,8 @@ describe("Canvas", () => {
     });
 
     test("does nothing on duplicate with no selection", () => {
-        useCanvasStore
-            .getState()
-            .addShape(makeShape(0, { x: 0, y: 0 }, { x: 100, y: 100 }));
+        const shape = makeShape(0, { x: 0, y: 0 }, { x: 100, y: 100 });
+        useCanvasStore.getState().addShape(shape);
         render(<Canvas />);
 
         fireEvent.keyDown(window, { key: "d", ctrlKey: true });
