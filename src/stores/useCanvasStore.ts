@@ -47,6 +47,7 @@ interface CanvasActions {
     duplicateSelectedShapes: () => void;
     setCurrentShape: (shape: Shape | null) => void;
     setSelectedIds: (ids: number[]) => void;
+    setSelectedAll: () => void;
     toggleSelectedIds: (id: number, multi: boolean) => void;
     setSelectionBox: (box: BoundingBox | null) => void;
     setIsBoxSelecting: (value: boolean) => void;
@@ -272,6 +273,11 @@ export const useCanvasStore = create<CanvasState & CanvasActions>(
         setCurrentShape: shape => set({ currentShape: shape }),
 
         setSelectedIds: ids => set({ selectedIds: ids }),
+
+        setSelectedAll: () => {
+            const allIds = [...get().shapes.keys()];
+            set({ selectedIds: allIds });
+        },
 
         toggleSelectedIds: (id, multi) =>
             set(state => {

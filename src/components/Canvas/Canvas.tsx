@@ -58,6 +58,7 @@ export default function Canvas() {
         startWorldPos,
         setCurrentShape,
         setSelectedIds,
+        setSelectedAll,
         toggleSelectedIds,
         setSelectionBox,
         setIsBoxSelecting,
@@ -596,6 +597,10 @@ export default function Canvas() {
                 } else if (key === "d") {
                     duplicateSelectedShapes();
                     e.preventDefault();
+                } else if (key === "a") {
+                    setSelectedAll();
+                    useTool.getState().setTool(Tools.select);
+                    e.preventDefault();
                 }
             }
         };
@@ -612,6 +617,7 @@ export default function Canvas() {
         getPosCompareToWorld,
         undo,
         redo,
+        setSelectedAll,
     ]);
 
     useEffect(() => {
