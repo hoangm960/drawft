@@ -92,6 +92,126 @@ describe("Canvas", () => {
         expect(useCanvasStore.getState().scale).toEqual(5);
     });
 
+    test("keeps the world point under the cursor fixed when zooming in", () => {
+        render(<Canvas />);
+
+        fireEvent.wheel(canvas(), {
+            deltaY: -100,
+            clientX: 200,
+            clientY: 150,
+        });
+
+        const state = useCanvasStore.getState();
+        expect(state.scale).toBeCloseTo(1.1);
+        expect(state.offset.x).toBeCloseTo(-20);
+        expect(state.offset.y).toBeCloseTo(-15);
+    });
+
+    test("keeps the world point under the cursor fixed when zooming out", () => {
+        render(<Canvas />);
+
+        fireEvent.wheel(canvas(), {
+            deltaY: 100,
+            clientX: 200,
+            clientY: 150,
+        });
+
+        const state = useCanvasStore.getState();
+        expect(state.scale).toBeCloseTo(0.9);
+        expect(state.offset.x).toBeCloseTo(20);
+        expect(state.offset.y).toBeCloseTo(15);
+    });
+
+    test("anchors zoom at the cursor when already panned", () => {
+        useCanvasStore.getState().setOffset({ x: 50, y: 75 });
+        render(<Canvas />);
+
+        fireEvent.wheel(canvas(), {
+            deltaY: -100,
+            clientX: 200,
+            clientY: 150,
+        });
+
+        const state = useCanvasStore.getState();
+        expect(state.scale).toBeCloseTo(1.1);
+        expect(state.offset.x).toBeCloseTo(35);
+        expect(state.offset.y).toBeCloseTo(67.5);
+    });
+
+    test("anchors zoom at the cursor when already zoomed", () => {
+        useCanvasStore.getState().setScale(2);
+        render(<Canvas />);
+
+        fireEvent.wheel(canvas(), {
+            deltaY: -100,
+            clientX: 200,
+            clientY: 150,
+        });
+
+        const state = useCanvasStore.getState();
+        expect(state.scale).toBeCloseTo(2.1);
+        expect(state.offset.x).toBeCloseTo(-10);
+        expect(state.offset.y).toBeCloseTo(-7.5);
+    });
+
+    test("subtracts the canvas bounding rect when anchoring zoom", () => {
+        render(<Canvas />);
+        jest.spyOn(canvas(), "getBoundingClientRect").mockReturnValue({
+            x: 50,
+            y: 30,
+            left: 50,
+            top: 30,
+            right: 850,
+            bottom: 630,
+            width: 800,
+            height: 600,
+            toJSON: () => ({}),
+        });
+
+        fireEvent.wheel(canvas(), {
+            deltaY: -100,
+            clientX: 200,
+            clientY: 150,
+        });
+
+        const state = useCanvasStore.getState();
+        expect(state.scale).toBeCloseTo(1.1);
+        expect(state.offset.x).toBeCloseTo(-15);
+        expect(state.offset.y).toBeCloseTo(-12);
+    });
+
+    test("leaves the offset untouched when zoom-in is clamped", () => {
+        useCanvasStore.getState().setScale(5);
+        useCanvasStore.getState().setOffset({ x: 10, y: 20 });
+        render(<Canvas />);
+
+        fireEvent.wheel(canvas(), {
+            deltaY: -100,
+            clientX: 200,
+            clientY: 150,
+        });
+
+        const state = useCanvasStore.getState();
+        expect(state.scale).toEqual(5);
+        expect(state.offset).toEqual({ x: 10, y: 20 });
+    });
+
+    test("leaves the offset untouched when zoom-out is clamped", () => {
+        useCanvasStore.getState().setScale(0.1);
+        useCanvasStore.getState().setOffset({ x: 10, y: 20 });
+        render(<Canvas />);
+
+        fireEvent.wheel(canvas(), {
+            deltaY: 100,
+            clientX: 200,
+            clientY: 150,
+        });
+
+        const state = useCanvasStore.getState();
+        expect(state.scale).toEqual(0.1);
+        expect(state.offset).toEqual({ x: 10, y: 20 });
+    });
+
     test("draws a shape from drag and commits it on mouse up", () => {
         useTool.getState().setTool(Tools.rect);
         render(<Canvas />);
