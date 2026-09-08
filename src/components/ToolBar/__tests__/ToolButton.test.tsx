@@ -65,12 +65,12 @@ describe("ToolButton", () => {
             />
         );
 
-        expect(screen.getByTitle(tooltip)).toHaveClass("bg-gray-500");
+        expect(screen.getByTitle(tooltip)).toHaveClass("bg-gray-200");
     });
 
     test("applies inactive styling when not active", () => {
         render(<ToolButton icon={icon} onClick={onClick} tooltip={tooltip} />);
 
-        expect(screen.getByTitle(tooltip)).toHaveClass("bg-gray-300");
+        expect(screen.getByTitle(tooltip)).toHaveClass("bg-transparent");
     });
 });

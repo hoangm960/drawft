@@ -46,14 +46,14 @@ describe("ToolBar", () => {
         useTool.getState().setTool(Tools.pan);
         render(<ToolBar />);
 
-        expect(screen.getByTitle("Pan")).toHaveClass("bg-gray-500");
+        expect(screen.getByTitle("Pan")).toHaveClass("bg-gray-200");
     });
 
     test("does not apply the active class to the other tool buttons", () => {
         useTool.getState().setTool(Tools.pan);
         render(<ToolBar />);
 
-        expect(screen.getByTitle("Select")).toHaveClass("bg-gray-300");
+        expect(screen.getByTitle("Select")).toHaveClass("bg-transparent");
     });
 
     test.each(TOOLTIPS)("disables the %s button while dragging", tooltip => {

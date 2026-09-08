@@ -1,4 +1,4 @@
-import { render, screen, fireEvent } from "@testing-library/react";
+import { render, screen, fireEvent, act } from "@testing-library/react";
 import ShapeSettings from "../ShapeSettings";
 import { useCanvasStore } from "@stores/useCanvasStore";
 import { Tools, type Shape } from "@/types";
@@ -54,7 +54,7 @@ describe("ShapeSettings", () => {
         expect(screen.getByLabelText("Stroke width")).toHaveValue("6");
         expect(screen.getByLabelText("Stroke color")).toHaveValue("#00ff00");
         expect(screen.getByLabelText("Stroke pattern dotted")).toHaveClass(
-            "bg-gray-500"
+            "bg-blue-500"
         );
     });
 
@@ -122,14 +122,14 @@ describe("ShapeSettings", () => {
     test("shows None active when the selected shape has no fill", () => {
         renderWithSelectedShape();
 
-        expect(screen.getByLabelText("No fill")).toHaveClass("bg-gray-500");
+        expect(screen.getByLabelText("No fill")).toHaveClass("bg-blue-500");
     });
 
     test("seeds the fill color from the selected shape", () => {
         renderWithSelectedShape(Tools.rect, { fillColor: "#ff0000" });
 
         expect(screen.getByLabelText("Fill color")).toHaveValue("#ff0000");
-        expect(screen.getByLabelText("No fill")).toHaveClass("bg-gray-700");
+        expect(screen.getByLabelText("No fill")).toHaveClass("bg-gray-100");
     });
 
     test("applies the fill color change to the selection", () => {
@@ -198,7 +198,9 @@ describe("ShapeSettings", () => {
 
         expect(useCanvasStore.getState().past.length).toEqual(pastLength + 1);
 
-        useCanvasStore.getState().undo();
+        act(() => {
+            useCanvasStore.getState().undo();
+        });
 
         expect(
             useCanvasStore.getState().shapes.get(1)?.opacity
@@ -270,7 +272,9 @@ describe("ShapeSettings", () => {
 
         expect(useCanvasStore.getState().past.length).toEqual(pastLength + 1);
 
-        useCanvasStore.getState().undo();
+        act(() => {
+            useCanvasStore.getState().undo();
+        });
 
         expect(
             useCanvasStore.getState().shapes.get(1)?.strokeWidth
@@ -288,7 +292,9 @@ describe("ShapeSettings", () => {
 
         expect(useCanvasStore.getState().past.length).toEqual(pastLength + 1);
 
-        useCanvasStore.getState().undo();
+        act(() => {
+            useCanvasStore.getState().undo();
+        });
 
         expect(
             useCanvasStore.getState().shapes.get(1)?.strokeColor
@@ -303,7 +309,9 @@ describe("ShapeSettings", () => {
 
         expect(useCanvasStore.getState().past.length).toEqual(pastLength + 1);
 
-        useCanvasStore.getState().undo();
+        act(() => {
+            useCanvasStore.getState().undo();
+        });
 
         expect(
             useCanvasStore.getState().shapes.get(1)?.strokePattern

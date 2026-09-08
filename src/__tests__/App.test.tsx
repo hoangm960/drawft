@@ -29,7 +29,7 @@ describe("App", () => {
     test("highlights the active tool button", () => {
         render(<App />);
 
-        expect(screen.getByTitle("Select")).toHaveClass("bg-gray-500");
+        expect(screen.getByTitle("Select")).toHaveClass("bg-gray-200");
     });
 
     test("updates the active tool when clicking a tool button", () => {

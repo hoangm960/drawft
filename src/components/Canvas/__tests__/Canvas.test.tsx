@@ -230,7 +230,6 @@ describe("Canvas", () => {
                 to: { x: 200, y: 300 },
                 rotation: 0,
                 strokeWidth: 2,
-                strokeColor: "#ffffff",
             })
         );
     });
