@@ -18,6 +18,9 @@ describe("settingsStorage", () => {
             fillColor: "#00ff00",
             opacity: 0.5,
             cornerRadius: 15,
+            autosave: true,
+            autosaveMethod: "interval" as const,
+            autosaveInterval: 5000,
         };
         saveSettings(settings);
         const loaded = loadSettings();
@@ -48,5 +51,25 @@ describe("settingsStorage", () => {
         const defaults = getDefaultSettings();
         expect(loaded.strokeWidth).toBe(5);
         expect(loaded.strokeColor).toBe(defaults.strokeColor);
+    });
+
+    test("should clamp autosaveInterval below minimum", () => {
+        const settings = {
+            version: 1,
+            autosaveInterval: 500, // Below 1000
+        };
+        localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify(settings));
+        const loaded = loadSettings();
+        expect(loaded.autosaveInterval).toBe(1000);
+    });
+
+    test("should clamp autosaveInterval above maximum", () => {
+        const settings = {
+            version: 1,
+            autosaveInterval: 400000, // Above 300000
+        };
+        localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify(settings));
+        const loaded = loadSettings();
+        expect(loaded.autosaveInterval).toBe(300000);
     });
 });
