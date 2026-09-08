@@ -70,4 +70,20 @@ describe("Settings", () => {
         fireEvent.click(solidButton);
         expect(useSettingsStore.getState().strokePattern).toBe("solid");
     });
+
+    test("enables save options and updates store", () => {
+        render(<Settings />);
+        fireEvent.click(screen.getByTitle("Settings"));
+
+        const autosaveCheckbox = screen.getByLabelText(
+            "Autosave enabled"
+        ) as HTMLInputElement;
+        expect(autosaveCheckbox).toBeEnabled();
+        fireEvent.click(autosaveCheckbox);
+        expect(useSettingsStore.getState().autosave).toBe(true);
+
+        const intervalRadio = screen.getByLabelText("Interval");
+        fireEvent.click(intervalRadio);
+        expect(useSettingsStore.getState().autosaveMethod).toBe("interval");
+    });
 });
