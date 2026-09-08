@@ -6,6 +6,10 @@ interface SettingsModalProps {
     onClose: () => void;
 }
 
+interface SettingsModalProps {
+    onClose: () => void;
+}
+
 const PATTERNS: StrokePattern[] = ["solid", "dashed", "dotted"];
 
 function DefaultStylingSection() {
@@ -144,12 +148,20 @@ function DefaultStylingSection() {
 }
 
 function SaveSection() {
+    const {
+        autosave,
+        setAutosave,
+        autosaveMethod,
+        setAutosaveMethod,
+        autosaveInterval,
+        setAutosaveInterval,
+    } = useSettingsStore();
+
     return (
-        <section className="p-4 border-b border-gray-700">
-            <h3 className="text-lg font-semibold text-gray-200 mb-4">
+        <section className="p-4 border-b border-gray-700 space-y-4">
+            <h3 className="text-lg font-semibold text-gray-200">
                 Save Options
             </h3>
-            {/* TODO: Wire this section up to boardStorage and BoardStatus */}
             <div className="flex items-center justify-between">
                 <label htmlFor="autosave" className="text-sm text-gray-400">
                     Autosave enabled
@@ -157,18 +169,57 @@ function SaveSection() {
                 <input
                     id="autosave"
                     type="checkbox"
-                    disabled
-                    title="Not implemented yet"
-                    className="h-4 w-4 rounded bg-gray-700 border-gray-600"
+                    checked={autosave}
+                    onChange={e => setAutosave(e.target.checked)}
+                    className="h-4 w-4 rounded bg-gray-700 border-gray-600 text-blue-600 focus:ring-blue-500"
                 />
             </div>
-            <button
-                type="button"
-                disabled
-                title="Not implemented yet"
-                className="mt-4 w-full px-4 py-2 text-sm rounded-md bg-blue-600 text-white opacity-50 cursor-not-allowed">
-                Save now
-            </button>
+            {autosave && (
+                <div className="space-y-2">
+                    <div className="text-sm text-gray-400">Autosave method</div>
+                    <div className="flex gap-4">
+                        <label className="flex items-center gap-2 text-sm text-gray-300">
+                            <input
+                                type="radio"
+                                name="autosave-method"
+                                value="on_change"
+                                checked={autosaveMethod === "on_change"}
+                                onChange={() => setAutosaveMethod("on_change")}
+                                className="bg-gray-700 border-gray-600"
+                            />
+                            On change
+                        </label>
+                        <label className="flex items-center gap-2 text-sm text-gray-300">
+                            <input
+                                type="radio"
+                                name="autosave-method"
+                                value="interval"
+                                checked={autosaveMethod === "interval"}
+                                onChange={() => setAutosaveMethod("interval")}
+                                className="bg-gray-700 border-gray-600"
+                            />
+                            Interval
+                        </label>
+                    </div>
+                    {autosaveMethod === "interval" && (
+                        <div className="flex items-center gap-2">
+                            <input
+                                type="number"
+                                value={autosaveInterval / 1000}
+                                onChange={e =>
+                                    setAutosaveInterval(
+                                        Number(e.target.value) * 1000
+                                    )
+                                }
+                                className="w-20 bg-gray-700 border-gray-600 rounded-md p-1 text-sm"
+                            />
+                            <span className="text-sm text-gray-400">
+                                seconds
+                            </span>
+                        </div>
+                    )}
+                </div>
+            )}
         </section>
     );
 }

@@ -2,6 +2,7 @@ import { create } from "zustand";
 import {
     loadSettings,
     saveSettings,
+    type AutosaveMethod,
     type PersistedSettings,
 } from "@/utils/settingsStorage";
 
@@ -14,6 +15,9 @@ interface SettingsActions {
     setFillColor: (value?: string) => void;
     setOpacity: (value: number) => void;
     setCornerRadius: (value: number) => void;
+    setAutosave: (value: boolean) => void;
+    setAutosaveMethod: (value: AutosaveMethod) => void;
+    setAutosaveInterval: (value: number) => void;
 }
 
 const initialState = loadSettings();
@@ -27,6 +31,9 @@ export const useSettingsStore = create<SettingsState & SettingsActions>(
         setFillColor: value => set({ fillColor: value ?? "transparent" }),
         setOpacity: value => set({ opacity: value }),
         setCornerRadius: value => set({ cornerRadius: value }),
+        setAutosave: value => set({ autosave: value }),
+        setAutosaveMethod: value => set({ autosaveMethod: value }),
+        setAutosaveInterval: value => set({ autosaveInterval: value }),
     })
 );
 

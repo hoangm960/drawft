@@ -1,41 +1,39 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useCallback } from "react";
 import { useCanvasStore } from "@stores/useCanvasStore";
-import { loadBoard, saveBoard } from "@/utils/boardStorage";
-
-type SaveStatus = "unsaved" | "saved" | "error";
+import { useSettingsStore } from "@stores/useSettingsStore";
+import { loadBoard } from "@/utils/boardStorage";
+import { useBoardSaver } from "@/hooks/useBoardSaver";
 
 export default function BoardStatus() {
-    const [status, setStatus] = useState<SaveStatus | null>(null);
-    const [savedAt, setSavedAt] = useState<string | null>(null);
-    const isDirtyRef = useRef(false);
+    const { status, savedAt, isDirty, markAsDirty, persist } = useBoardSaver();
+    const { autosave, autosaveMethod, autosaveInterval } = useSettingsStore();
+    const timeoutRef = useRef<number | null>(null);
+    const intervalRef = useRef<number | null>(null);
+
+    const debouncedSave = useCallback(() => {
+        if (timeoutRef.current) {
+            clearTimeout(timeoutRef.current);
+        }
+        timeoutRef.current = window.setTimeout(() => {
+            persist();
+        }, 2000);
+    }, [persist]);
 
     useEffect(() => {
-        const persist = (): boolean => {
-            const { shapes, offset, scale } = useCanvasStore.getState();
-            const ok = saveBoard(shapes, offset, scale);
-            setStatus(ok ? "saved" : "error");
-            if (ok) {
-                isDirtyRef.current = false;
-                setSavedAt(new Date().toLocaleTimeString());
-            }
-            return ok;
-        };
-
         const board = loadBoard();
         if (board) {
             useCanvasStore.getState().loadPersistedBoard(board);
-            setStatus("saved");
-            setSavedAt(new Date().toLocaleTimeString());
         }
+    }, []);
 
-        const unsubscribe = useCanvasStore.subscribe((state, prev) => {
+    useEffect(() => {
+        const canvasSub = useCanvasStore.subscribe((state, prev) => {
             if (
                 state.shapes !== prev.shapes ||
                 state.offset !== prev.offset ||
                 state.scale !== prev.scale
             ) {
-                isDirtyRef.current = true;
-                setStatus("unsaved");
+                markAsDirty();
             }
         });
 
@@ -53,28 +51,63 @@ export default function BoardStatus() {
         };
         window.addEventListener("keydown", onKeyDown);
 
+        return () => {
+            canvasSub();
+            window.removeEventListener("keydown", onKeyDown);
+        };
+    }, [persist, markAsDirty]);
+
+    useEffect(() => {
         const onBeforeUnload = (e: BeforeUnloadEvent) => {
-            if (!isDirtyRef.current) return;
+            if (!isDirty) return;
             e.preventDefault();
             e.returnValue = "";
         };
         window.addEventListener("beforeunload", onBeforeUnload);
 
         return () => {
-            unsubscribe();
-            window.removeEventListener("keydown", onKeyDown);
             window.removeEventListener("beforeunload", onBeforeUnload);
         };
-    }, []);
+    }, [isDirty]);
 
-    if (status === null) return null;
+    useEffect(() => {
+        // Cleanup previous timers
+        if (timeoutRef.current) clearTimeout(timeoutRef.current);
+        if (intervalRef.current) clearInterval(intervalRef.current);
+
+        if (autosave && isDirty) {
+            if (autosaveMethod === "on_change") {
+                debouncedSave();
+            } else if (autosaveMethod === "interval") {
+                intervalRef.current = window.setInterval(() => {
+                    if (isDirty) {
+                        persist();
+                    }
+                }, autosaveInterval);
+            }
+        }
+
+        return () => {
+            if (timeoutRef.current) clearTimeout(timeoutRef.current);
+            if (intervalRef.current) clearInterval(intervalRef.current);
+        };
+    }, [
+        autosave,
+        isDirty,
+        autosaveMethod,
+        autosaveInterval,
+        debouncedSave,
+        persist,
+    ]);
 
     const text =
         status === "unsaved"
-            ? "Unsaved changes"
-            : status === "saved"
-              ? `Saved${savedAt ? ` ${savedAt}` : ""}`
-              : "Save failed";
+            ? "Unsaved"
+            : status === "saving"
+              ? "Saving..."
+              : status === "saved"
+                ? `Saved${savedAt ? ` ${savedAt}` : ""}`
+                : "Error";
 
     return (
         <div

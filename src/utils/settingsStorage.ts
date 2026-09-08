@@ -9,6 +9,8 @@ import {
 export const SETTINGS_STORAGE_KEY = "drawft:settings:v1";
 export const SETTINGS_STORAGE_VERSION = 1;
 
+export type AutosaveMethod = "on_change" | "interval";
+
 export interface PersistedSettings {
     version: number;
     strokeWidth: number;
@@ -17,6 +19,9 @@ export interface PersistedSettings {
     fillColor?: string;
     opacity: number;
     cornerRadius: number;
+    autosave: boolean;
+    autosaveMethod: AutosaveMethod;
+    autosaveInterval: number;
 }
 
 const isFiniteNumber = (value: unknown): value is number =>
@@ -25,6 +30,10 @@ const isFiniteNumber = (value: unknown): value is number =>
 const isStrokePattern = (value: unknown): value is StrokePattern =>
     typeof value === "string" &&
     (value === "solid" || value === "dashed" || value === "dotted");
+
+const isAutosaveMethod = (value: unknown): value is AutosaveMethod =>
+    typeof value === "string" &&
+    (value === "on_change" || value === "interval");
 
 const getStorage = (): Storage | null => {
     try {
@@ -93,6 +102,15 @@ export const loadSettings = (): PersistedSettings => {
         if (isFiniteNumber(data.cornerRadius)) {
             settings.cornerRadius = data.cornerRadius;
         }
+        if (typeof data.autosave === "boolean") {
+            settings.autosave = data.autosave;
+        }
+        if (isAutosaveMethod(data.autosaveMethod)) {
+            settings.autosaveMethod = data.autosaveMethod;
+        }
+        if (isFiniteNumber(data.autosaveInterval)) {
+            settings.autosaveInterval = data.autosaveInterval;
+        }
         return settings;
     } catch {
         return getDefaultSettings();
@@ -107,4 +125,7 @@ export const getDefaultSettings = (): PersistedSettings => ({
     fillColor: DEFAULT_FILL.fillColor,
     opacity: DEFAULT_OPACITY,
     cornerRadius: DEFAULT_CORNER_RADIUS,
+    autosave: false,
+    autosaveMethod: "on_change",
+    autosaveInterval: 30000,
 });

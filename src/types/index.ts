@@ -53,3 +53,5 @@ export type ResizeHandle = CornerHandle | EndpointHandle;
 export type Handles = ResizeHandle | "rotate";
 
 export type StrokePattern = "solid" | "dashed" | "dotted";
+
+export type AutosaveMethod = "on_change" | "interval";
