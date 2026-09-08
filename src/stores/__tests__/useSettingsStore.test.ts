@@ -51,4 +51,11 @@ describe("useSettingsStore", () => {
         useSettingsStore.getState().setAutosaveInterval(400000);
         expect(useSettingsStore.getState().autosaveInterval).toBe(300000);
     });
+
+    test("should set canvas background color", () => {
+        useSettingsStore.getState().setCanvasBackgroundColor("#123456");
+        expect(useSettingsStore.getState().canvasBackgroundColor).toBe(
+            "#123456"
+        );
+    });
 });

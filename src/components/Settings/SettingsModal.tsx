@@ -227,12 +227,14 @@ function SaveSection() {
 }
 
 function CanvasBackgroundSection() {
+    const { canvasBackgroundColor, setCanvasBackgroundColor } =
+        useSettingsStore();
+
     return (
         <section className="p-4">
             <h3 className="text-lg font-semibold text-gray-200 mb-4">
                 Canvas Background
             </h3>
-            {/* TODO: Wire this up to Canvas.tsx background and persist */}
             <div>
                 <label
                     htmlFor="canvas-bg-color"
@@ -242,9 +244,8 @@ function CanvasBackgroundSection() {
                 <input
                     id="canvas-bg-color"
                     type="color"
-                    defaultValue="#1a1a1a"
-                    disabled
-                    title="Not implemented yet"
+                    value={canvasBackgroundColor}
+                    onChange={e => setCanvasBackgroundColor(e.target.value)}
                     className="w-full h-8 p-1 bg-gray-700 rounded"
                 />
             </div>

@@ -21,6 +21,7 @@ describe("settingsStorage", () => {
             autosave: true,
             autosaveMethod: "interval" as const,
             autosaveInterval: 5000,
+            canvasBackgroundColor: "#123456",
         };
         saveSettings(settings);
         const loaded = loadSettings();

@@ -86,4 +86,16 @@ describe("Settings", () => {
         fireEvent.click(intervalRadio);
         expect(useSettingsStore.getState().autosaveMethod).toBe("interval");
     });
+
+    test("enables canvas background color and updates store", () => {
+        render(<Settings />);
+        fireEvent.click(screen.getByTitle("Settings"));
+
+        const bgColorInput = screen.getByLabelText("Background color");
+        expect(bgColorInput).toBeEnabled();
+        fireEvent.change(bgColorInput, { target: { value: "#123456" } });
+        expect(useSettingsStore.getState().canvasBackgroundColor).toBe(
+            "#123456"
+        );
+    });
 });
