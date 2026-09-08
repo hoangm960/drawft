@@ -20,6 +20,8 @@ export const DEFAULT_FILL: Required<FillStyle> = {
     fillColor: "transparent",
 };
 
+export const DEFAULT_OPACITY = 1;
+
 export const DEFAULT_CORNER_RADIUS = 20;
 
 export const STROKE_PATTERNS: Record<StrokePattern, number[]> = {
@@ -36,6 +38,13 @@ export const getStrokeDashScaled = (
     scale: number
 ): number[] =>
     getStrokeDash(pattern ?? DEFAULT_STROKE.strokePattern).map(v => v / scale);
+
+export const clampOpacity = (opacity: number): number => {
+    if (Number.isNaN(opacity)) return 0;
+    if (opacity > 1) return 1;
+    if (opacity < 0) return 0;
+    return opacity;
+};
 
 export const getBoxCorners = (box: BoundingBox): Point[] => [
     { x: box.from.x, y: box.from.y },

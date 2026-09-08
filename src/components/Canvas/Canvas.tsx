@@ -3,6 +3,7 @@ import { useTool } from "@stores/useToolStore";
 import { useCanvasStore } from "@stores/useCanvasStore";
 import {
     DEFAULT_FILL,
+    DEFAULT_OPACITY,
     DEFAULT_STROKE,
     getBoundingBoxForShapes,
     getBoxCorners,
@@ -183,6 +184,7 @@ export default function Canvas() {
                     ctx.rotate(shape.rotation);
                     ctx.translate(-center.x, -center.y);
                 }
+                ctx.globalAlpha = shape.opacity ?? DEFAULT_OPACITY;
                 ctx.strokeStyle =
                     shape.strokeColor ?? DEFAULT_STROKE.strokeColor;
                 ctx.fillStyle = shape.fillColor ?? DEFAULT_FILL.fillColor;

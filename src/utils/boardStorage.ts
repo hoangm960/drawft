@@ -48,6 +48,11 @@ const isShape = (value: unknown): value is Shape => {
         return false;
     if (s.cornerRadius !== undefined && !isFiniteNumber(s.cornerRadius))
         return false;
+    if (
+        s.opacity !== undefined &&
+        (!isFiniteNumber(s.opacity) || s.opacity < 0 || s.opacity > 1)
+    )
+        return false;
     return true;
 };
 

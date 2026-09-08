@@ -1,6 +1,11 @@
 import { useRef } from "react";
 import { useCanvasStore } from "@stores/useCanvasStore";
-import { DEFAULT_CORNER_RADIUS, DEFAULT_STROKE } from "@/utils/shapes";
+import {
+    DEFAULT_CORNER_RADIUS,
+    DEFAULT_OPACITY,
+    DEFAULT_STROKE,
+    clampOpacity,
+} from "@/utils/shapes";
 import { Tools, type Shape, type StrokePattern } from "@/types";
 
 const PATTERNS: StrokePattern[] = ["solid", "dashed", "dotted"];
@@ -42,6 +47,7 @@ export default function ShapeSettings() {
     const pattern =
         selectedShape?.strokePattern ?? DEFAULT_STROKE.strokePattern;
     const fillColor = selectedShape?.fillColor;
+    const opacity = selectedShape?.opacity ?? DEFAULT_OPACITY;
     const cornerRadius = selectedShape?.cornerRadius ?? DEFAULT_CORNER_RADIUS;
 
     const isDisabled = selectedIds.length === 0;
@@ -151,6 +157,32 @@ export default function ShapeSettings() {
                     }>
                     None
                 </button>
+            </div>
+
+            <span className="text-xs text-gray-300">Opacity</span>
+
+            <div
+                className={`flex flex-col gap-1 ${isDisabled ? "opacity-50" : ""}`}>
+                <span className="text-xs text-gray-300">
+                    {Math.round(opacity * 100)}%
+                </span>
+                <input
+                    type="range"
+                    min={0}
+                    max={100}
+                    value={Math.round(opacity * 100)}
+                    disabled={isDisabled}
+                    aria-label="Opacity"
+                    onMouseDown={beginCapture}
+                    onMouseUp={commitCapture}
+                    onFocus={beginCapture}
+                    onBlur={commitCapture}
+                    onChange={e =>
+                        updateSelectedShapes({
+                            opacity: clampOpacity(Number(e.target.value) / 100),
+                        })
+                    }
+                />
             </div>
 
             {showCornerRadius && (
