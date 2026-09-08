@@ -27,8 +27,28 @@ describe("useSettingsStore", () => {
         expect(useSettingsStore.getState().fillColor).toBe("transparent");
     });
 
-    test("should set opacity", () => {
-        useSettingsStore.getState().setOpacity(0.5);
-        expect(useSettingsStore.getState().opacity).toBe(0.5);
+    test("should set autosave", () => {
+        useSettingsStore.getState().setAutosave(true);
+        expect(useSettingsStore.getState().autosave).toBe(true);
+    });
+
+    test("should set autosave method", () => {
+        useSettingsStore.getState().setAutosaveMethod("interval");
+        expect(useSettingsStore.getState().autosaveMethod).toBe("interval");
+    });
+
+    test("should set autosave interval within bounds", () => {
+        useSettingsStore.getState().setAutosaveInterval(5000);
+        expect(useSettingsStore.getState().autosaveInterval).toBe(5000);
+    });
+
+    test("should clamp autosave interval below minimum", () => {
+        useSettingsStore.getState().setAutosaveInterval(500);
+        expect(useSettingsStore.getState().autosaveInterval).toBe(1000);
+    });
+
+    test("should clamp autosave interval above maximum", () => {
+        useSettingsStore.getState().setAutosaveInterval(400000);
+        expect(useSettingsStore.getState().autosaveInterval).toBe(300000);
     });
 });
