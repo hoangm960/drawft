@@ -3,6 +3,7 @@ import {
     loadSettings,
     saveSettings,
     clampAutosaveInterval,
+    type ThemeMode,
     type AutosaveMethod,
     type PersistedSettings,
 } from "@/utils/settingsStorage";
@@ -10,8 +11,9 @@ import {
 type SettingsState = Omit<PersistedSettings, "version">;
 
 interface SettingsActions {
+    setTheme: (value: ThemeMode) => void;
     setStrokeWidth: (value: number) => void;
-    setStrokeColor: (value: string) => void;
+    setStrokeColor: (value?: string) => void;
     setStrokePattern: (value: "solid" | "dashed" | "dotted") => void;
     setFillColor: (value?: string) => void;
     setOpacity: (value: number) => void;
@@ -19,7 +21,7 @@ interface SettingsActions {
     setAutosave: (value: boolean) => void;
     setAutosaveMethod: (value: AutosaveMethod) => void;
     setAutosaveInterval: (value: number) => void;
-    setCanvasBackgroundColor: (value: string) => void;
+    setCanvasBackgroundColor: (value: string | undefined) => void;
 }
 
 const initialState = loadSettings();
@@ -27,6 +29,7 @@ const initialState = loadSettings();
 export const useSettingsStore = create<SettingsState & SettingsActions>(
     set => ({
         ...initialState,
+        setTheme: value => set({ theme: value }),
         setStrokeWidth: value => set({ strokeWidth: value }),
         setStrokeColor: value => set({ strokeColor: value }),
         setStrokePattern: value => set({ strokePattern: value }),

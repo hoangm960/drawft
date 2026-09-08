@@ -13,11 +13,13 @@ export const MIN_AUTOSAVE_INTERVAL = 1000;
 export const MAX_AUTOSAVE_INTERVAL = 300000;
 
 export type AutosaveMethod = "on_change" | "interval";
+export type ThemeMode = "system" | "light" | "dark";
 
 export interface PersistedSettings {
     version: number;
+    theme: ThemeMode;
     strokeWidth: number;
-    strokeColor: string;
+    strokeColor?: string;
     strokePattern: StrokePattern;
     fillColor?: string;
     opacity: number;
@@ -25,7 +27,7 @@ export interface PersistedSettings {
     autosave: boolean;
     autosaveMethod: AutosaveMethod;
     autosaveInterval: number;
-    canvasBackgroundColor: string;
+    canvasBackgroundColor?: string;
 }
 
 const isFiniteNumber = (value: unknown): value is number =>
@@ -38,6 +40,10 @@ const isStrokePattern = (value: unknown): value is StrokePattern =>
 const isAutosaveMethod = (value: unknown): value is AutosaveMethod =>
     typeof value === "string" &&
     (value === "on_change" || value === "interval");
+
+const isThemeMode = (value: unknown): value is ThemeMode =>
+    typeof value === "string" &&
+    (value === "system" || value === "light" || value === "dark");
 
 export const clampAutosaveInterval = (interval: number): number =>
     Math.min(Math.max(interval, MIN_AUTOSAVE_INTERVAL), MAX_AUTOSAVE_INTERVAL);
@@ -88,10 +94,13 @@ export const loadSettings = (): PersistedSettings => {
         }
 
         const settings: PersistedSettings = getDefaultSettings();
+        if (isThemeMode(data.theme)) {
+            settings.theme = data.theme;
+        }
         if (isFiniteNumber(data.strokeWidth)) {
             settings.strokeWidth = data.strokeWidth;
         }
-        if (typeof data.strokeColor === "string") {
+        if (typeof data.strokeColor === "string" || data.strokeColor === undefined) {
             settings.strokeColor = data.strokeColor;
         }
         if (isStrokePattern(data.strokePattern)) {
@@ -120,7 +129,7 @@ export const loadSettings = (): PersistedSettings => {
                 data.autosaveInterval
             );
         }
-        if (typeof data.canvasBackgroundColor === "string") {
+        if (typeof data.canvasBackgroundColor === "string" || data.canvasBackgroundColor === undefined) {
             settings.canvasBackgroundColor = data.canvasBackgroundColor;
         }
         return settings;
@@ -131,8 +140,8 @@ export const loadSettings = (): PersistedSettings => {
 
 export const getDefaultSettings = (): PersistedSettings => ({
     version: SETTINGS_STORAGE_VERSION,
+    theme: "system",
     strokeWidth: DEFAULT_STROKE.strokeWidth,
-    strokeColor: DEFAULT_STROKE.strokeColor,
     strokePattern: DEFAULT_STROKE.strokePattern,
     fillColor: DEFAULT_FILL.fillColor,
     opacity: DEFAULT_OPACITY,
@@ -140,5 +149,4 @@ export const getDefaultSettings = (): PersistedSettings => ({
     autosave: false,
     autosaveMethod: "on_change",
     autosaveInterval: 30000,
-    canvasBackgroundColor: "#030712",
 });
