@@ -9,6 +9,10 @@ const PATTERNS: StrokePattern[] = ["solid", "dashed", "dotted"];
 export default function ShapeSettings() {
     const { shapes, selectedIds, updateSelectedShapes } = useCanvasStore();
     const defaultSettings = useSettingsStore();
+    const { theme } = defaultSettings;
+    const isDark = theme === "dark" || (theme === "system" && window.matchMedia("(prefers-color-scheme: dark)").matches);
+    const themeDefaultStrokeColor = isDark ? "#ffffff" : "#000000";
+
     const pendingSnapshotRef = useRef<Map<number, Shape> | null>(null);
 
     const beginCapture = () => {
@@ -43,6 +47,7 @@ export default function ShapeSettings() {
 
     const width = selectedShape?.strokeWidth ?? defaultSettings.strokeWidth;
     const color = selectedShape?.strokeColor ?? defaultSettings.strokeColor;
+    const resolvedColor = color ?? themeDefaultStrokeColor;
     const pattern =
         selectedShape?.strokePattern ?? defaultSettings.strokePattern;
     const fillColor = selectedShape?.fillColor ?? defaultSettings.fillColor;
@@ -59,7 +64,7 @@ export default function ShapeSettings() {
     return (
         <div className="flex flex-col gap-3">
             <div className="flex items-center justify-between">
-                <span className="text-xs text-gray-300">Stroke</span>
+                <span className="text-xs text-gray-700 dark:text-gray-300">Stroke</span>
                 {isDisabled && (
                     <span className="text-xs text-gray-500">Defaults</span>
                 )}
@@ -70,7 +75,7 @@ export default function ShapeSettings() {
                     isDisabled ? "opacity-50" : ""
                 }`}>
                 <div className="flex flex-col gap-1">
-                    <span className="text-xs text-gray-300">
+                    <span className="text-xs text-gray-700 dark:text-gray-300">
                         Width <span className="text-gray-500">{width}px</span>
                     </span>
                     <input
@@ -93,7 +98,7 @@ export default function ShapeSettings() {
                 </div>
 
                 <div className="flex flex-col gap-1">
-                    <span className="text-xs text-gray-300">Pattern</span>
+                    <span className="text-xs text-gray-700 dark:text-gray-300">Pattern</span>
                     <div className="flex gap-1">
                         {PATTERNS.map(p => (
                             <button
@@ -101,10 +106,10 @@ export default function ShapeSettings() {
                                 type="button"
                                 disabled={isDisabled}
                                 aria-label={`Stroke pattern ${p}`}
-                                className={`px-2 py-1 text-xs rounded-md capitalize ${
+                                className={`px-2 py-1 text-xs rounded-md capitalize border ${
                                     pattern === p
-                                        ? "bg-gray-500 text-white"
-                                        : "bg-gray-700 text-gray-300"
+                                        ? "bg-blue-500 border-blue-500 text-white"
+                                        : "bg-gray-100 dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300"
                                 }`}
                                 onClick={() =>
                                     handleButtonCommit({ strokePattern: p })
@@ -116,25 +121,41 @@ export default function ShapeSettings() {
                 </div>
 
                 <div className="flex flex-col gap-1">
-                    <span className="text-xs text-gray-300">Color</span>
-                    <input
-                        type="color"
-                        value={color}
-                        disabled={isDisabled}
-                        aria-label="Stroke color"
-                        className="h-8 w-full cursor-pointer rounded-md bg-gray-700 p-1"
-                        onFocus={beginCapture}
-                        onBlur={commitCapture}
-                        onChange={e =>
-                            updateSelectedShapes({
-                                strokeColor: e.target.value,
-                            })
-                        }
-                    />
+                    <span className="text-xs text-gray-700 dark:text-gray-300">Color</span>
+                    <div className="flex items-center gap-2">
+                        <input
+                            type="color"
+                            value={resolvedColor}
+                            disabled={isDisabled}
+                            aria-label="Stroke color"
+                            className="h-8 w-full cursor-pointer rounded-md bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 p-1"
+                            onFocus={beginCapture}
+                            onBlur={commitCapture}
+                            onChange={e =>
+                                updateSelectedShapes({
+                                    strokeColor: e.target.value,
+                                })
+                            }
+                        />
+                        <button
+                            type="button"
+                            disabled={isDisabled}
+                            aria-label="Auto stroke color"
+                            className={`shrink-0 px-2 py-1 text-xs rounded-md capitalize border ${
+                                color === undefined
+                                    ? "bg-blue-500 border-blue-500 text-white"
+                                    : "bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-600"
+                            }`}
+                            onClick={() =>
+                                handleButtonCommit({ strokeColor: undefined })
+                            }>
+                            Auto
+                        </button>
+                    </div>
                 </div>
             </div>
 
-            <span className="text-xs text-gray-300">Fill</span>
+            <span className="text-xs text-gray-700 dark:text-gray-300">Fill</span>
 
             <div
                 className={`flex items-center gap-2 ${
@@ -145,7 +166,7 @@ export default function ShapeSettings() {
                     value={fillColor === "transparent" ? "#000000" : fillColor}
                     disabled={isDisabled}
                     aria-label="Fill color"
-                    className="h-8 w-full cursor-pointer rounded-md bg-gray-700 p-1"
+                    className="h-8 w-full cursor-pointer rounded-md bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 p-1"
                     onFocus={beginCapture}
                     onBlur={commitCapture}
                     onChange={e =>
@@ -156,10 +177,10 @@ export default function ShapeSettings() {
                     type="button"
                     disabled={isDisabled}
                     aria-label="No fill"
-                    className={`shrink-0 px-2 py-1 text-xs rounded-md capitalize ${
+                    className={`shrink-0 px-2 py-1 text-xs rounded-md capitalize border ${
                         fillColor === "transparent"
-                            ? "bg-gray-500 text-white"
-                            : "bg-gray-700 text-gray-300"
+                            ? "bg-blue-500 border-blue-500 text-white"
+                            : "bg-gray-100 dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300"
                     }`}
                     onClick={() =>
                         handleButtonCommit({ fillColor: "transparent" })
@@ -168,13 +189,13 @@ export default function ShapeSettings() {
                 </button>
             </div>
 
-            <span className="text-xs text-gray-300">Opacity</span>
+            <span className="text-xs text-gray-700 dark:text-gray-300">Opacity</span>
 
             <div
                 className={`flex flex-col gap-1 ${
                     isDisabled ? "opacity-50" : ""
                 }`}>
-                <span className="text-xs text-gray-300">
+                <span className="text-xs text-gray-700 dark:text-gray-300">
                     {Math.round(opacity * 100)}%
                 </span>
                 <input
@@ -184,6 +205,7 @@ export default function ShapeSettings() {
                     value={Math.round(opacity * 100)}
                     disabled={isDisabled}
                     aria-label="Opacity"
+                    className="accent-blue-500"
                     onMouseDown={beginCapture}
                     onMouseUp={commitCapture}
                     onFocus={beginCapture}
@@ -198,9 +220,9 @@ export default function ShapeSettings() {
 
             {showCornerRadius && (
                 <>
-                    <span className="text-xs text-gray-300">Corner</span>
+                    <span className="text-xs text-gray-700 dark:text-gray-300">Corner</span>
                     <div className="flex flex-col gap-1">
-                        <span className="text-xs text-gray-300">
+                        <span className="text-xs text-gray-700 dark:text-gray-300">
                             Radius{" "}
                             <span className="text-gray-500">
                                 {cornerRadius}px
@@ -212,6 +234,7 @@ export default function ShapeSettings() {
                             max={50}
                             value={cornerRadius}
                             aria-label="Corner radius"
+                            className="accent-blue-500"
                             onMouseDown={beginCapture}
                             onMouseUp={commitCapture}
                             onFocus={beginCapture}

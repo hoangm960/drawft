@@ -26,18 +26,22 @@ function DefaultStylingSection() {
         setFillColor,
         setOpacity,
         setCornerRadius,
+        theme,
     } = useSettingsStore();
+
+    const isDark = theme === "dark" || (theme === "system" && window.matchMedia("(prefers-color-scheme: dark)").matches);
+    const themeDefaultStrokeColor = isDark ? "#ffffff" : "#000000";
 
     return (
         <section className="p-4 border-b border-gray-700">
-            <h3 className="text-lg font-semibold text-gray-200 mb-4">
+            <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4">
                 Default Styling
             </h3>
             <div className="grid grid-cols-2 gap-4 text-sm">
                 <div>
                     <label
                         htmlFor="stroke-width"
-                        className="block text-gray-400 mb-1">
+                        className="block text-gray-600 dark:text-gray-400 mb-1">
                         Stroke width ({strokeWidth}px)
                     </label>
                     <input
@@ -53,19 +57,31 @@ function DefaultStylingSection() {
                 <div>
                     <label
                         htmlFor="stroke-color"
-                        className="block text-gray-400 mb-1">
+                        className="block text-gray-600 dark:text-gray-400 mb-1">
                         Stroke color
                     </label>
-                    <input
-                        id="stroke-color"
-                        type="color"
-                        value={strokeColor}
-                        onChange={e => setStrokeColor(e.target.value)}
-                        className="w-full h-8 p-1 bg-gray-700 rounded"
-                    />
+                    <div className="flex items-center gap-2">
+                        <input
+                            id="stroke-color"
+                            type="color"
+                            value={strokeColor ?? themeDefaultStrokeColor}
+                            onChange={e => setStrokeColor(e.target.value)}
+                            className="w-full h-8 p-1 bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded cursor-pointer"
+                        />
+                        <button
+                            type="button"
+                            onClick={() => setStrokeColor(undefined)}
+                            className={`shrink-0 px-2 py-1 text-xs rounded-md capitalize border ${
+                                strokeColor === undefined
+                                    ? "bg-blue-500 border-blue-500 text-white"
+                                    : "bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-600"
+                            }`}>
+                            Auto
+                        </button>
+                    </div>
                 </div>
                 <div>
-                    <label className="block text-gray-400 mb-1">
+                    <label className="block text-gray-600 dark:text-gray-400 mb-1">
                         Stroke pattern
                     </label>
                     <div className="flex gap-2">
@@ -76,8 +92,8 @@ function DefaultStylingSection() {
                                 onClick={() => setStrokePattern(p)}
                                 className={`px-2 py-1 text-xs rounded-md capitalize ${
                                     strokePattern === p
-                                        ? "bg-gray-500 text-white"
-                                        : "bg-gray-700 text-gray-300"
+                                        ? "bg-blue-500 text-white"
+                                        : "bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600"
                                 }`}>
                                 {p}
                             </button>
@@ -87,7 +103,7 @@ function DefaultStylingSection() {
                 <div>
                     <label
                         htmlFor="fill-color"
-                        className="block text-gray-400 mb-1">
+                        className="block text-gray-600 dark:text-gray-400 mb-1">
                         Fill color
                     </label>
                     <div className="flex items-center gap-2">
@@ -96,15 +112,15 @@ function DefaultStylingSection() {
                             type="color"
                             value={fillColor ?? "#000000"}
                             onChange={e => setFillColor(e.target.value)}
-                            className="w-full h-8 p-1 bg-gray-700 rounded"
+                            className="w-full h-8 p-1 bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded"
                         />
                         <button
                             type="button"
                             onClick={() => setFillColor("transparent")}
                             className={`shrink-0 px-2 py-1 text-xs rounded-md capitalize ${
                                 fillColor === "transparent"
-                                    ? "bg-gray-500 text-white"
-                                    : "bg-gray-700 text-gray-300"
+                                    ? "bg-blue-500 text-white"
+                                    : "bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600"
                             }`}>
                             None
                         </button>
@@ -113,7 +129,7 @@ function DefaultStylingSection() {
                 <div>
                     <label
                         htmlFor="opacity"
-                        className="block text-gray-400 mb-1">
+                        className="block text-gray-600 dark:text-gray-400 mb-1">
                         Opacity ({Math.round(opacity * 100)}%)
                     </label>
                     <input
@@ -123,13 +139,13 @@ function DefaultStylingSection() {
                         max={100}
                         value={opacity * 100}
                         onChange={e => setOpacity(Number(e.target.value) / 100)}
-                        className="w-full"
+                        className="w-full accent-blue-500"
                     />
                 </div>
                 <div>
                     <label
                         htmlFor="corner-radius"
-                        className="block text-gray-400 mb-1">
+                        className="block text-gray-600 dark:text-gray-400 mb-1">
                         Corner radius ({cornerRadius}px)
                     </label>
                     <input
@@ -139,7 +155,7 @@ function DefaultStylingSection() {
                         max={50}
                         value={cornerRadius}
                         onChange={e => setCornerRadius(Number(e.target.value))}
-                        className="w-full"
+                        className="w-full accent-blue-500"
                     />
                 </div>
             </div>
@@ -158,12 +174,12 @@ function SaveSection() {
     } = useSettingsStore();
 
     return (
-        <section className="p-4 border-b border-gray-700 space-y-4">
-            <h3 className="text-lg font-semibold text-gray-200">
+        <section className="p-4 border-b border-gray-200 dark:border-gray-700 space-y-4">
+            <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-200">
                 Save Options
             </h3>
             <div className="flex items-center justify-between">
-                <label htmlFor="autosave" className="text-sm text-gray-400">
+                <label htmlFor="autosave" className="text-sm text-gray-700 dark:text-gray-400">
                     Autosave enabled
                 </label>
                 <input
@@ -171,32 +187,32 @@ function SaveSection() {
                     type="checkbox"
                     checked={autosave}
                     onChange={e => setAutosave(e.target.checked)}
-                    className="h-4 w-4 rounded bg-gray-700 border-gray-600 text-blue-600 focus:ring-blue-500"
+                    className="h-4 w-4 rounded bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-blue-600 focus:ring-blue-500"
                 />
             </div>
             {autosave && (
                 <div className="space-y-2">
-                    <div className="text-sm text-gray-400">Autosave method</div>
+                    <div className="text-sm text-gray-700 dark:text-gray-400">Autosave method</div>
                     <div className="flex gap-4">
-                        <label className="flex items-center gap-2 text-sm text-gray-300">
+                        <label className="flex items-center gap-2 text-sm text-gray-800 dark:text-gray-300">
                             <input
                                 type="radio"
                                 name="autosave-method"
                                 value="on_change"
                                 checked={autosaveMethod === "on_change"}
                                 onChange={() => setAutosaveMethod("on_change")}
-                                className="bg-gray-700 border-gray-600"
+                                className="bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-blue-600"
                             />
                             On change
                         </label>
-                        <label className="flex items-center gap-2 text-sm text-gray-300">
+                        <label className="flex items-center gap-2 text-sm text-gray-800 dark:text-gray-300">
                             <input
                                 type="radio"
                                 name="autosave-method"
                                 value="interval"
                                 checked={autosaveMethod === "interval"}
                                 onChange={() => setAutosaveMethod("interval")}
-                                className="bg-gray-700 border-gray-600"
+                                className="bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-blue-600"
                             />
                             Interval
                         </label>
@@ -213,9 +229,9 @@ function SaveSection() {
                                         Number(e.target.value) * 1000
                                     )
                                 }
-                                className="w-20 bg-gray-700 border-gray-600 rounded-md p-1 text-sm text-gray-200"
+                                className="w-20 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md p-1 text-sm text-gray-900 dark:text-gray-200"
                             />
-                            <span className="text-sm text-gray-400">
+                            <span className="text-sm text-gray-600 dark:text-gray-400">
                                 seconds
                             </span>
                         </div>
@@ -229,25 +245,65 @@ function SaveSection() {
 function CanvasBackgroundSection() {
     const { canvasBackgroundColor, setCanvasBackgroundColor } =
         useSettingsStore();
+    
+    const { theme } = useSettingsStore();
+    const isDark = theme === "dark" || (theme === "system" && window.matchMedia("(prefers-color-scheme: dark)").matches);
+    const defaultColor = isDark ? "#030712" : "#ffffff";
 
     return (
-        <section className="p-4">
-            <h3 className="text-lg font-semibold text-gray-200 mb-4">
-                Canvas Background
+        <section className="p-4 border-b border-gray-200 dark:border-gray-700">
+            <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4 flex items-center justify-between">
+                <span>Canvas Background</span>
+                {canvasBackgroundColor !== undefined && (
+                    <button
+                        type="button"
+                        onClick={() => setCanvasBackgroundColor(undefined)}
+                        className="text-xs px-2 py-1 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded hover:bg-gray-300 dark:hover:bg-gray-600"
+                    >
+                        Reset to Theme Default
+                    </button>
+                )}
             </h3>
             <div>
                 <label
                     htmlFor="canvas-bg-color"
-                    className="block text-sm text-gray-400 mb-1">
+                    className="block text-sm text-gray-600 dark:text-gray-400 mb-1">
                     Background color
                 </label>
                 <input
                     id="canvas-bg-color"
                     type="color"
-                    value={canvasBackgroundColor}
+                    value={canvasBackgroundColor ?? defaultColor}
                     onChange={e => setCanvasBackgroundColor(e.target.value)}
-                    className="w-full h-8 p-1 bg-gray-700 rounded"
+                    className="w-full h-8 p-1 bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded cursor-pointer"
                 />
+            </div>
+        </section>
+    );
+}
+
+function ThemeSection() {
+    const { theme, setTheme } = useSettingsStore();
+
+    return (
+        <section className="p-4 border-b border-gray-200 dark:border-gray-700 space-y-4">
+            <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-200">
+                Theme
+            </h3>
+            <div className="flex gap-4">
+                {(["system", "light", "dark"] as const).map(t => (
+                    <label key={t} className="flex items-center gap-2 text-sm text-gray-800 dark:text-gray-300 capitalize cursor-pointer">
+                        <input
+                            type="radio"
+                            name="theme"
+                            value={t}
+                            checked={theme === t}
+                            onChange={() => setTheme(t)}
+                            className="bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-blue-600 focus:ring-blue-500"
+                        />
+                        {t}
+                    </label>
+                ))}
             </div>
         </section>
     );
@@ -272,14 +328,14 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
             aria-modal="true"
             aria-label="Settings">
             <div
-                className="bg-gray-800 rounded-2xl w-full max-w-md shadow-xl"
+                className="bg-white dark:bg-gray-800 rounded-2xl w-full max-w-md shadow-xl"
                 onClick={e => e.stopPropagation()}>
-                <header className="flex items-center justify-between p-4 border-b border-gray-700">
-                    <h2 className="text-xl font-bold text-white">Settings</h2>
+                <header className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
+                    <h2 className="text-xl font-bold text-gray-900 dark:text-white">Settings</h2>
                     <button
                         type="button"
                         onClick={onClose}
-                        className="text-gray-400 hover:text-white"
+                        className="text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
                         aria-label="Close settings">
                         <svg
                             className="w-6 h-6"
@@ -296,6 +352,7 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
                     </button>
                 </header>
 
+                <ThemeSection />
                 <DefaultStylingSection />
                 <SaveSection />
                 <CanvasBackgroundSection />
@@ -304,7 +361,7 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
                     <button
                         type="button"
                         onClick={onClose}
-                        className="px-4 py-2 text-sm rounded-md bg-gray-600 text-white hover:bg-gray-500">
+                        className="px-4 py-2 text-sm rounded-md bg-gray-200 dark:bg-gray-600 text-gray-800 dark:text-white hover:bg-gray-300 dark:hover:bg-gray-500">
                         Close
                     </button>
                 </footer>

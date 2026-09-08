@@ -22,11 +22,20 @@ export default function ToolButton({
     };
 
     return (
-        <div
+        <button
+            type="button"
             title={tooltip}
-            className={`p-1 flex items-center justify-center rounded-2xl ${isActive ? "bg-gray-500 hover:bg-gray-400" : "bg-gray-300 hover:bg-white"} ${disabled ? "opacity-50 pointer-events-none" : ""}`}
+            className={`group p-1 flex items-center justify-center rounded-2xl transition-colors ${
+                isActive
+                    ? "bg-gray-200 dark:bg-gray-500 hover:bg-gray-300 dark:hover:bg-gray-400"
+                    : "bg-transparent dark:bg-gray-300 hover:bg-gray-100 dark:hover:bg-white"
+            } ${disabled ? "opacity-50 pointer-events-none" : ""}`}
             onClick={handleClick}>
-            <img src={icon} alt={tooltip} className="max-w-full max-h-full" />
-        </div>
+            <img
+                src={icon}
+                alt={tooltip}
+                className="max-w-full max-h-full"
+            />
+        </button>
     );
 }

@@ -113,7 +113,7 @@ export default function BoardStatus() {
         <div
             role="status"
             aria-live="polite"
-            className="pointer-events-none absolute bottom-4 right-4 z-10 rounded-full bg-gray-600/30 px-3 py-1 text-xs text-gray-300">
+            className="pointer-events-none absolute bottom-4 right-4 z-10 rounded-full bg-white/80 dark:bg-gray-600/30 px-3 py-1 text-xs text-gray-700 dark:text-gray-300 shadow-sm dark:shadow-none">
             {text}
         </div>
     );
