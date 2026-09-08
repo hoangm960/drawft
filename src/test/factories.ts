@@ -21,6 +21,7 @@ export const makeShape = (
             | "strokePattern"
             | "fillColor"
             | "cornerRadius"
+            | "opacity"
         >
     >
 ): Shape => ({ id, type, from, to, rotation: 0, ...props });
@@ -38,6 +39,7 @@ export const createMockContext = (
     strokeStyle: "",
     fillStyle: "",
     lineWidth: 0,
+    globalAlpha: 1,
     save: jest.fn(),
     restore: jest.fn(),
     translate: jest.fn(),

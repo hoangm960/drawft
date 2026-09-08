@@ -104,6 +104,60 @@ describe("boardStorage", () => {
         expect(loadBoard()?.scale).toEqual(0.1);
     });
 
+    test("saveBoard round-trips shape opacity", () => {
+        const shape = makeShape(
+            1,
+            { x: 0, y: 0 },
+            { x: 10, y: 10 },
+            Tools.rect,
+            { opacity: 0.4 }
+        );
+        expect(saveBoard(new Map([[1, shape]]), { x: 0, y: 0 }, 1)).toBe(true);
+
+        expect(loadBoard()?.shapes).toEqual([shape]);
+    });
+
+    test("loadBoard keeps shapes without opacity for backward compat", () => {
+        const shape = makeShape(1, { x: 0, y: 0 }, { x: 10, y: 10 });
+        localStorage.setItem(
+            BOARD_STORAGE_KEY,
+            JSON.stringify({
+                version: 1,
+                shapes: [shape],
+                offset: { x: 0, y: 0 },
+                scale: 1,
+            })
+        );
+
+        expect(loadBoard()?.shapes).toEqual([shape]);
+    });
+
+    test("loadBoard filters out shapes with invalid opacity", () => {
+        const valid = makeShape(
+            1,
+            { x: 0, y: 0 },
+            { x: 10, y: 10 },
+            Tools.rect,
+            { opacity: 0.5 }
+        );
+        localStorage.setItem(
+            BOARD_STORAGE_KEY,
+            JSON.stringify({
+                version: 1,
+                shapes: [
+                    valid,
+                    { ...valid, id: 2, opacity: -0.1 },
+                    { ...valid, id: 3, opacity: 2 },
+                    { ...valid, id: 4, opacity: "0.5" },
+                ],
+                offset: { x: 0, y: 0 },
+                scale: 1,
+            })
+        );
+
+        expect(loadBoard()?.shapes).toEqual([valid]);
+    });
+
     test("saveBoard returns false when storage throws", () => {
         jest.spyOn(Storage.prototype, "setItem").mockImplementation(() => {
             throw new Error("quota exceeded");

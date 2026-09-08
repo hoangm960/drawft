@@ -14,6 +14,7 @@ const renderWithSelectedShape = (
             | "strokePattern"
             | "fillColor"
             | "cornerRadius"
+            | "opacity"
         >
     >
 ) => {
@@ -37,6 +38,7 @@ describe("ShapeSettings", () => {
         expect(screen.getByLabelText("Stroke pattern solid")).toBeDisabled();
         expect(screen.getByLabelText("Fill color")).toBeDisabled();
         expect(screen.getByLabelText("No fill")).toBeDisabled();
+        expect(screen.getByLabelText("Opacity")).toBeDisabled();
         expect(
             screen.queryByLabelText("Corner radius")
         ).not.toBeInTheDocument();
@@ -149,6 +151,57 @@ describe("ShapeSettings", () => {
 
         expect(
             useCanvasStore.getState().shapes.get(1)?.fillColor
+        ).toBeUndefined();
+    });
+
+    test("seeds the opacity from the selected shape as a percentage", () => {
+        renderWithSelectedShape(Tools.rect, { opacity: 0.5 });
+
+        expect(screen.getByLabelText("Opacity")).toHaveValue("50");
+    });
+
+    test("defaults the opacity to fully opaque when unset", () => {
+        renderWithSelectedShape();
+
+        expect(screen.getByLabelText("Opacity")).toHaveValue("100");
+    });
+
+    test("applies the opacity change to the selection", () => {
+        renderWithSelectedShape();
+
+        fireEvent.change(screen.getByLabelText("Opacity"), {
+            target: { value: "25" },
+        });
+
+        expect(useCanvasStore.getState().shapes.get(1)?.opacity).toEqual(0.25);
+    });
+
+    test("does nothing when the opacity is changed with no selection", () => {
+        render(<ShapeSettings />);
+
+        fireEvent.change(screen.getByLabelText("Opacity"), {
+            target: { value: "25" },
+        });
+
+        expect(useCanvasStore.getState().shapes.size).toEqual(0);
+    });
+
+    test("groups an opacity drag into a single undo step", () => {
+        renderWithSelectedShape();
+        const opacity = screen.getByLabelText("Opacity");
+        const pastLength = useCanvasStore.getState().past.length;
+
+        fireEvent.mouseDown(opacity);
+        fireEvent.change(opacity, { target: { value: "80" } });
+        fireEvent.change(opacity, { target: { value: "40" } });
+        fireEvent.mouseUp(opacity);
+
+        expect(useCanvasStore.getState().past.length).toEqual(pastLength + 1);
+
+        useCanvasStore.getState().undo();
+
+        expect(
+            useCanvasStore.getState().shapes.get(1)?.opacity
         ).toBeUndefined();
     });
 

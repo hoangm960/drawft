@@ -3,6 +3,7 @@ import { getCalls, makeBBox, makeShape } from "@/test/factories";
 import {
     DEFAULT_STROKE,
     STROKE_PATTERNS,
+    clampOpacity,
     drawArrow,
     drawDiamond,
     drawEllipse,
@@ -958,5 +959,22 @@ describe("stroke helpers", () => {
         expect(getStrokeDashScaled(undefined, 1)).toEqual(
             STROKE_PATTERNS[DEFAULT_STROKE.strokePattern]
         );
+    });
+});
+
+describe("clampOpacity", () => {
+    test("keeps values inside the range unchanged", () => {
+        expect(clampOpacity(0)).toEqual(0);
+        expect(clampOpacity(0.5)).toEqual(0.5);
+        expect(clampOpacity(1)).toEqual(1);
+    });
+
+    test("clamps values outside the range", () => {
+        expect(clampOpacity(-0.5)).toEqual(0);
+        expect(clampOpacity(1.5)).toEqual(1);
+    });
+
+    test("treats NaN as fully transparent", () => {
+        expect(clampOpacity(Number.NaN)).toEqual(0);
     });
 });
