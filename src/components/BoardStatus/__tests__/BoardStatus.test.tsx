@@ -75,4 +75,36 @@ describe("BoardStatus", () => {
         expect(screen.queryByRole("status")).toBeNull();
         expect(localStorage.getItem("drawft:board:v1")).toBeNull();
     });
+
+    const fireBeforeUnload = () =>
+        window.dispatchEvent(new Event("beforeunload", { cancelable: true }));
+
+    test("warns on close/refresh when there are unsaved changes", () => {
+        render(<BoardStatus />);
+
+        act(() => {
+            store().addShape(makeShape(1, { x: 0, y: 0 }, { x: 10, y: 10 }));
+        });
+
+        expect(fireBeforeUnload()).toBe(false);
+    });
+
+    test("does not warn on close/refresh after saving", () => {
+        render(<BoardStatus />);
+
+        act(() => {
+            store().addShape(makeShape(1, { x: 0, y: 0 }, { x: 10, y: 10 }));
+        });
+        act(() => {
+            fireEvent.keyDown(window, { key: "s", ctrlKey: true });
+        });
+
+        expect(fireBeforeUnload()).toBe(true);
+    });
+
+    test("does not warn on close/refresh with a clean board", () => {
+        render(<BoardStatus />);
+
+        expect(fireBeforeUnload()).toBe(true);
+    });
 });
