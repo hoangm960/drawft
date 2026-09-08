@@ -1,6 +1,7 @@
 import { create } from "zustand";
 import RBush from "rbush";
 import type { Shape, Point, BoundingBox } from "@/types";
+import type { PersistedBoard } from "@/utils/boardStorage";
 import {
     getBoundingBox,
     getBoundingBoxBounds,
@@ -61,6 +62,7 @@ interface CanvasActions {
     undo: () => void;
     redo: () => void;
     commitHistory: (snapshot: Map<number, Shape>) => void;
+    loadPersistedBoard: (board: PersistedBoard) => void;
     reset: () => void;
 }
 
@@ -369,6 +371,31 @@ export const useCanvasStore = create<CanvasState & CanvasActions>(
         commitHistory: snapshot => {
             const state = get();
             set({ past: [...state.past, snapshot], future: [] });
+        },
+
+        loadPersistedBoard: board => {
+            const shapes = new Map<number, Shape>(
+                board.shapes.map(shape => [
+                    shape.id,
+                    {
+                        ...shape,
+                        from: { ...shape.from },
+                        to: { ...shape.to },
+                    },
+                ])
+            );
+            set({
+                shapes,
+                shapeIndex: rebuildShapeIndex(shapes),
+                offset: { ...board.offset },
+                scale: board.scale,
+                currentShape: null,
+                selectedIds: [],
+                selectionBox: null,
+                isBoxSelecting: false,
+                past: [],
+                future: [],
+            });
         },
 
         reset: () => set(createInitialState()),
