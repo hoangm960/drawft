@@ -32,7 +32,7 @@ describe("Sidebar", () => {
     test("shows a hint when nothing is selected", () => {
         render(<Sidebar />);
 
-        expect(screen.getByText("Select a shape")).toBeInTheDocument();
+        expect(screen.getByText("Defaults")).toBeInTheDocument();
     });
 
     test("disables the controls when nothing is selected", () => {

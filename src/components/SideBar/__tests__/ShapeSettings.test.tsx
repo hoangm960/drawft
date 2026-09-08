@@ -32,7 +32,7 @@ describe("ShapeSettings", () => {
     test("shows a hint and disables controls when nothing is selected", () => {
         render(<ShapeSettings />);
 
-        expect(screen.getByText("Select a shape")).toBeInTheDocument();
+        expect(screen.getByText("Defaults")).toBeInTheDocument();
         expect(screen.getByLabelText("Stroke width")).toBeDisabled();
         expect(screen.getByLabelText("Stroke color")).toBeDisabled();
         expect(screen.getByLabelText("Stroke pattern solid")).toBeDisabled();
@@ -149,9 +149,9 @@ describe("ShapeSettings", () => {
 
         fireEvent.click(screen.getByLabelText("No fill"));
 
-        expect(
-            useCanvasStore.getState().shapes.get(1)?.fillColor
-        ).toBeUndefined();
+        expect(useCanvasStore.getState().shapes.get(1)?.fillColor).toBe(
+            "transparent"
+        );
     });
 
     test("seeds the opacity from the selected shape as a percentage", () => {
