@@ -1,0 +1,52 @@
+import {
+    saveSettings,
+    loadSettings,
+    getDefaultSettings,
+    SETTINGS_STORAGE_KEY,
+} from "../settingsStorage";
+
+describe("settingsStorage", () => {
+    beforeEach(() => {
+        localStorage.clear();
+    });
+
+    test("should save and load settings", () => {
+        const settings = {
+            strokeWidth: 10,
+            strokeColor: "#ff0000",
+            strokePattern: "dashed" as const,
+            fillColor: "#00ff00",
+            opacity: 0.5,
+            cornerRadius: 15,
+        };
+        saveSettings(settings);
+        const loaded = loadSettings();
+        expect(loaded).toEqual({ ...settings, version: 1 });
+    });
+
+    test("should return default settings if nothing is saved", () => {
+        const loaded = loadSettings();
+        expect(loaded).toEqual(getDefaultSettings());
+    });
+
+    test("should return default settings if saved data is corrupted", () => {
+        localStorage.setItem(SETTINGS_STORAGE_KEY, "corrupted");
+        const loaded = loadSettings();
+        expect(loaded).toEqual(getDefaultSettings());
+    });
+
+    test("should handle partial settings", () => {
+        const partialSettings = {
+            version: 1,
+            strokeWidth: 5,
+        };
+        localStorage.setItem(
+            SETTINGS_STORAGE_KEY,
+            JSON.stringify(partialSettings)
+        );
+        const loaded = loadSettings();
+        const defaults = getDefaultSettings();
+        expect(loaded.strokeWidth).toBe(5);
+        expect(loaded.strokeColor).toBe(defaults.strokeColor);
+    });
+});
