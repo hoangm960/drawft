@@ -40,7 +40,12 @@ export interface FillStyle {
     fillColor?: string;
 }
 
-export interface Shape extends BaseEntity, Geometry, StrokeStyle, FillStyle {}
+export interface OpacityStyle {
+    opacity?: number;
+}
+
+export interface Shape
+    extends BaseEntity, Geometry, StrokeStyle, FillStyle, OpacityStyle {}
 
 export type CornerHandle = "nw" | "ne" | "se" | "sw";
 export type EndpointHandle = "from" | "to";
