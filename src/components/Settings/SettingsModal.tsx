@@ -1,37 +1,48 @@
 import { useEffect } from "react";
-import {
-    DEFAULT_CORNER_RADIUS,
-    DEFAULT_FILL,
-    DEFAULT_OPACITY,
-    DEFAULT_STROKE,
-} from "@/utils/shapes";
+import { useSettingsStore } from "@stores/useSettingsStore";
+import type { StrokePattern } from "@/types";
 
 interface SettingsModalProps {
     onClose: () => void;
 }
 
+const PATTERNS: StrokePattern[] = ["solid", "dashed", "dotted"];
+
 function DefaultStylingSection() {
+    const {
+        strokeWidth,
+        strokeColor,
+        strokePattern,
+        fillColor,
+        opacity,
+        cornerRadius,
+        setStrokeWidth,
+        setStrokeColor,
+        setStrokePattern,
+        setFillColor,
+        setOpacity,
+        setCornerRadius,
+    } = useSettingsStore();
+
     return (
         <section className="p-4 border-b border-gray-700">
             <h3 className="text-lg font-semibold text-gray-200 mb-4">
                 Default Styling
             </h3>
             <div className="grid grid-cols-2 gap-4 text-sm">
-                {/* TODO: Wire this section up to a new useSettingsStore */}
                 <div>
                     <label
                         htmlFor="stroke-width"
                         className="block text-gray-400 mb-1">
-                        Stroke width
+                        Stroke width ({strokeWidth}px)
                     </label>
                     <input
                         id="stroke-width"
                         type="range"
                         min={1}
                         max={20}
-                        defaultValue={DEFAULT_STROKE.strokeWidth}
-                        disabled
-                        title="Not implemented yet"
+                        value={strokeWidth}
+                        onChange={e => setStrokeWidth(Number(e.target.value))}
                         className="w-full"
                     />
                 </div>
@@ -44,9 +55,8 @@ function DefaultStylingSection() {
                     <input
                         id="stroke-color"
                         type="color"
-                        defaultValue={DEFAULT_STROKE.strokeColor}
-                        disabled
-                        title="Not implemented yet"
+                        value={strokeColor}
+                        onChange={e => setStrokeColor(e.target.value)}
                         className="w-full h-8 p-1 bg-gray-700 rounded"
                     />
                 </div>
@@ -55,20 +65,19 @@ function DefaultStylingSection() {
                         Stroke pattern
                     </label>
                     <div className="flex gap-2">
-                        <button
-                            type="button"
-                            disabled
-                            title="Not implemented yet"
-                            className="px-2 py-1 text-xs rounded-md bg-gray-700 text-gray-300 opacity-50">
-                            Solid
-                        </button>
-                        <button
-                            type="button"
-                            disabled
-                            title="Not implemented yet"
-                            className="px-2 py-1 text-xs rounded-md bg-gray-700 text-gray-300 opacity-50">
-                            Dashed
-                        </button>
+                        {PATTERNS.map(p => (
+                            <button
+                                key={p}
+                                type="button"
+                                onClick={() => setStrokePattern(p)}
+                                className={`px-2 py-1 text-xs rounded-md capitalize ${
+                                    strokePattern === p
+                                        ? "bg-gray-500 text-white"
+                                        : "bg-gray-700 text-gray-300"
+                                }`}>
+                                {p}
+                            </button>
+                        ))}
                     </div>
                 </div>
                 <div>
@@ -77,29 +86,39 @@ function DefaultStylingSection() {
                         className="block text-gray-400 mb-1">
                         Fill color
                     </label>
-                    <input
-                        id="fill-color"
-                        type="color"
-                        defaultValue={DEFAULT_FILL.fillColor}
-                        disabled
-                        title="Not implemented yet"
-                        className="w-full h-8 p-1 bg-gray-700 rounded"
-                    />
+                    <div className="flex items-center gap-2">
+                        <input
+                            id="fill-color"
+                            type="color"
+                            value={fillColor ?? "#000000"}
+                            onChange={e => setFillColor(e.target.value)}
+                            className="w-full h-8 p-1 bg-gray-700 rounded"
+                        />
+                        <button
+                            type="button"
+                            onClick={() => setFillColor("transparent")}
+                            className={`shrink-0 px-2 py-1 text-xs rounded-md capitalize ${
+                                fillColor === "transparent"
+                                    ? "bg-gray-500 text-white"
+                                    : "bg-gray-700 text-gray-300"
+                            }`}>
+                            None
+                        </button>
+                    </div>
                 </div>
                 <div>
                     <label
                         htmlFor="opacity"
                         className="block text-gray-400 mb-1">
-                        Opacity
+                        Opacity ({Math.round(opacity * 100)}%)
                     </label>
                     <input
                         id="opacity"
                         type="range"
                         min={0}
                         max={100}
-                        defaultValue={DEFAULT_OPACITY * 100}
-                        disabled
-                        title="Not implemented yet"
+                        value={opacity * 100}
+                        onChange={e => setOpacity(Number(e.target.value) / 100)}
                         className="w-full"
                     />
                 </div>
@@ -107,16 +126,15 @@ function DefaultStylingSection() {
                     <label
                         htmlFor="corner-radius"
                         className="block text-gray-400 mb-1">
-                        Corner radius
+                        Corner radius ({cornerRadius}px)
                     </label>
                     <input
                         id="corner-radius"
                         type="range"
                         min={0}
                         max={50}
-                        defaultValue={DEFAULT_CORNER_RADIUS}
-                        disabled
-                        title="Not implemented yet"
+                        value={cornerRadius}
+                        onChange={e => setCornerRadius(Number(e.target.value))}
                         className="w-full"
                     />
                 </div>

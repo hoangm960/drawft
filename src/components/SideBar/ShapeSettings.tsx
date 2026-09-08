@@ -1,17 +1,14 @@
 import { useRef } from "react";
 import { useCanvasStore } from "@stores/useCanvasStore";
-import {
-    DEFAULT_CORNER_RADIUS,
-    DEFAULT_OPACITY,
-    DEFAULT_STROKE,
-    clampOpacity,
-} from "@/utils/shapes";
+import { useSettingsStore } from "@stores/useSettingsStore";
+import { clampOpacity } from "@/utils/shapes";
 import { Tools, type Shape, type StrokePattern } from "@/types";
 
 const PATTERNS: StrokePattern[] = ["solid", "dashed", "dotted"];
 
 export default function ShapeSettings() {
     const { shapes, selectedIds, updateSelectedShapes } = useCanvasStore();
+    const defaultSettings = useSettingsStore();
     const pendingSnapshotRef = useRef<Map<number, Shape> | null>(null);
 
     const beginCapture = () => {
@@ -42,15 +39,17 @@ export default function ShapeSettings() {
 
     const selectedShape: Shape | undefined = selectedShapes[0];
 
-    const width = selectedShape?.strokeWidth ?? DEFAULT_STROKE.strokeWidth;
-    const color = selectedShape?.strokeColor ?? DEFAULT_STROKE.strokeColor;
-    const pattern =
-        selectedShape?.strokePattern ?? DEFAULT_STROKE.strokePattern;
-    const fillColor = selectedShape?.fillColor;
-    const opacity = selectedShape?.opacity ?? DEFAULT_OPACITY;
-    const cornerRadius = selectedShape?.cornerRadius ?? DEFAULT_CORNER_RADIUS;
-
     const isDisabled = selectedIds.length === 0;
+
+    const width = selectedShape?.strokeWidth ?? defaultSettings.strokeWidth;
+    const color = selectedShape?.strokeColor ?? defaultSettings.strokeColor;
+    const pattern =
+        selectedShape?.strokePattern ?? defaultSettings.strokePattern;
+    const fillColor = selectedShape?.fillColor ?? defaultSettings.fillColor;
+    const opacity = selectedShape?.opacity ?? defaultSettings.opacity;
+    const cornerRadius =
+        selectedShape?.cornerRadius ?? defaultSettings.cornerRadius;
+
     const showCornerRadius =
         selectedShapes.length > 0 &&
         selectedShapes.every(
@@ -62,14 +61,14 @@ export default function ShapeSettings() {
             <div className="flex items-center justify-between">
                 <span className="text-xs text-gray-300">Stroke</span>
                 {isDisabled && (
-                    <span className="text-xs text-gray-500">
-                        Select a shape
-                    </span>
+                    <span className="text-xs text-gray-500">Defaults</span>
                 )}
             </div>
 
             <div
-                className={`flex flex-col gap-3 ${isDisabled ? "opacity-50" : ""}`}>
+                className={`flex flex-col gap-3 ${
+                    isDisabled ? "opacity-50" : ""
+                }`}>
                 <div className="flex flex-col gap-1">
                     <span className="text-xs text-gray-300">
                         Width <span className="text-gray-500">{width}px</span>
@@ -102,7 +101,11 @@ export default function ShapeSettings() {
                                 type="button"
                                 disabled={isDisabled}
                                 aria-label={`Stroke pattern ${p}`}
-                                className={`px-2 py-1 text-xs rounded-md capitalize ${pattern === p ? "bg-gray-500 text-white" : "bg-gray-700 text-gray-300"}`}
+                                className={`px-2 py-1 text-xs rounded-md capitalize ${
+                                    pattern === p
+                                        ? "bg-gray-500 text-white"
+                                        : "bg-gray-700 text-gray-300"
+                                }`}
                                 onClick={() =>
                                     handleButtonCommit({ strokePattern: p })
                                 }>
@@ -134,10 +137,12 @@ export default function ShapeSettings() {
             <span className="text-xs text-gray-300">Fill</span>
 
             <div
-                className={`flex items-center gap-2 ${isDisabled ? "opacity-50" : ""}`}>
+                className={`flex items-center gap-2 ${
+                    isDisabled ? "opacity-50" : ""
+                }`}>
                 <input
                     type="color"
-                    value={fillColor ?? "#ffffff"}
+                    value={fillColor === "transparent" ? "#000000" : fillColor}
                     disabled={isDisabled}
                     aria-label="Fill color"
                     className="h-8 w-full cursor-pointer rounded-md bg-gray-700 p-1"
@@ -151,9 +156,13 @@ export default function ShapeSettings() {
                     type="button"
                     disabled={isDisabled}
                     aria-label="No fill"
-                    className={`shrink-0 px-2 py-1 text-xs rounded-md capitalize ${fillColor ? "bg-gray-700 text-gray-300" : "bg-gray-500 text-white"}`}
+                    className={`shrink-0 px-2 py-1 text-xs rounded-md capitalize ${
+                        fillColor === "transparent"
+                            ? "bg-gray-500 text-white"
+                            : "bg-gray-700 text-gray-300"
+                    }`}
                     onClick={() =>
-                        handleButtonCommit({ fillColor: undefined })
+                        handleButtonCommit({ fillColor: "transparent" })
                     }>
                     None
                 </button>
@@ -162,7 +171,9 @@ export default function ShapeSettings() {
             <span className="text-xs text-gray-300">Opacity</span>
 
             <div
-                className={`flex flex-col gap-1 ${isDisabled ? "opacity-50" : ""}`}>
+                className={`flex flex-col gap-1 ${
+                    isDisabled ? "opacity-50" : ""
+                }`}>
                 <span className="text-xs text-gray-300">
                     {Math.round(opacity * 100)}%
                 </span>

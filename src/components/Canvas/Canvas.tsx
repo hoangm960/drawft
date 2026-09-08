@@ -1,6 +1,7 @@
 import { useRef, useCallback, useEffect, useMemo, useState } from "react";
 import { useTool } from "@stores/useToolStore";
 import { useCanvasStore } from "@stores/useCanvasStore";
+import { useSettingsStore } from "@stores/useSettingsStore";
 import {
     DEFAULT_FILL,
     DEFAULT_OPACITY,
@@ -191,7 +192,10 @@ export default function Canvas() {
                 ctx.lineWidth =
                     (shape.strokeWidth ?? DEFAULT_STROKE.strokeWidth) / scale;
                 ctx.setLineDash(
-                    getStrokeDashScaled(shape.strokePattern, scale)
+                    getStrokeDashScaled(
+                        shape.strokePattern ?? DEFAULT_STROKE.strokePattern,
+                        scale
+                    )
                 );
                 ctx.fill(path);
                 ctx.stroke(path);
@@ -485,13 +489,17 @@ export default function Canvas() {
                     return;
                 }
 
-                setCurrentShape({
-                    id: getNextId(),
-                    type: tool,
-                    from: startWorldPos,
-                    to: endWorldPos,
-                    rotation: 0,
-                });
+                if (tool !== Tools.select && tool !== Tools.pan) {
+                    const defaultSettings = useSettingsStore.getState();
+                    setCurrentShape({
+                        id: getNextId(),
+                        type: tool,
+                        from: startWorldPos,
+                        to: endWorldPos,
+                        rotation: 0,
+                        ...defaultSettings,
+                    });
+                }
             },
             [
                 isDragging,
@@ -501,7 +509,6 @@ export default function Canvas() {
                 rotateStart,
                 selectionBox,
                 tool,
-                selectedIds.length,
                 startWorldPos,
                 lastPos,
                 offset,
@@ -511,13 +518,14 @@ export default function Canvas() {
                 setOffset,
                 setLastPos,
                 setSelectionBox,
-                moveSelectedShapes,
-                setStartWorldPos,
                 setCurrentShape,
                 isResizing,
                 currentHandle,
                 resizeStart,
                 updateShape,
+                selectedIds,
+                moveSelectedShapes,
+                setStartWorldPos,
             ]
         );
 
