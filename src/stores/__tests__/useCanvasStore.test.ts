@@ -407,6 +407,37 @@ describe("useCanvasStore", () => {
         });
     });
 
+    describe("setSelectedAll", () => {
+        test("selects every shape id", () => {
+            const shape1 = makeShape(1, { x: 0, y: 0 }, { x: 10, y: 10 });
+            const shape2 = makeShape(2, { x: 20, y: 20 }, { x: 30, y: 30 });
+            store().addShape(shape1);
+            store().addShape(shape2);
+
+            store().setSelectedAll();
+
+            expect(new Set(store().selectedIds)).toEqual(new Set([1, 2]));
+        });
+
+        test("replaces the existing selection", () => {
+            const shape1 = makeShape(1, { x: 0, y: 0 }, { x: 10, y: 10 });
+            const shape2 = makeShape(2, { x: 20, y: 20 }, { x: 30, y: 30 });
+            store().addShape(shape1);
+            store().addShape(shape2);
+            store().setSelectedIds([1]);
+
+            store().setSelectedAll();
+
+            expect(new Set(store().selectedIds)).toEqual(new Set([1, 2]));
+        });
+
+        test("is a no-op when there are no shapes", () => {
+            store().setSelectedAll();
+
+            expect(store().selectedIds).toEqual([]);
+        });
+    });
+
     describe("setSelectionBox", () => {
         test("sets the selection box", () => {
             const box = {

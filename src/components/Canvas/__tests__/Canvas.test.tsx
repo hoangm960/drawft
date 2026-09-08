@@ -700,4 +700,66 @@ describe("Canvas", () => {
 
         expect(useCanvasStore.getState().shapes.size).toEqual(1);
     });
+
+    test("selects all shapes with Ctrl+A", () => {
+        const shape1 = makeShape(0, { x: 0, y: 0 }, { x: 100, y: 100 });
+        const shape2 = makeShape(1, { x: 150, y: 150 }, { x: 250, y: 250 });
+        useCanvasStore.getState().addShape(shape1);
+        useCanvasStore.getState().addShape(shape2);
+        render(<Canvas />);
+
+        fireEvent.keyDown(window, { key: "a", ctrlKey: true });
+
+        expect(new Set(useCanvasStore.getState().selectedIds)).toEqual(
+            new Set([0, 1])
+        );
+    });
+
+    test("treats Cmd+A like Ctrl+A", () => {
+        const shape1 = makeShape(0, { x: 0, y: 0 }, { x: 100, y: 100 });
+        const shape2 = makeShape(1, { x: 150, y: 150 }, { x: 250, y: 250 });
+        useCanvasStore.getState().addShape(shape1);
+        useCanvasStore.getState().addShape(shape2);
+        render(<Canvas />);
+
+        fireEvent.keyDown(window, { key: "A", metaKey: true });
+
+        expect(new Set(useCanvasStore.getState().selectedIds)).toEqual(
+            new Set([0, 1])
+        );
+    });
+
+    test("switches to the select tool and selects all when a drawing tool is active", () => {
+        const shape1 = makeShape(0, { x: 0, y: 0 }, { x: 100, y: 100 });
+        const shape2 = makeShape(1, { x: 150, y: 150 }, { x: 250, y: 250 });
+        useCanvasStore.getState().addShape(shape1);
+        useCanvasStore.getState().addShape(shape2);
+        useTool.getState().setTool(Tools.rect);
+        render(<Canvas />);
+
+        fireEvent.keyDown(window, { key: "a", ctrlKey: true });
+
+        expect(new Set(useCanvasStore.getState().selectedIds)).toEqual(
+            new Set([0, 1])
+        );
+        expect(useTool.getState().tool).toEqual(Tools.select);
+    });
+
+    test("does nothing on plain A without modifiers", () => {
+        const shape = makeShape(0, { x: 0, y: 0 }, { x: 100, y: 100 });
+        useCanvasStore.getState().addShape(shape);
+        render(<Canvas />);
+
+        fireEvent.keyDown(window, { key: "a" });
+
+        expect(useCanvasStore.getState().selectedIds).toEqual([]);
+    });
+
+    test("keeps an empty selection on Ctrl+A with no shapes", () => {
+        render(<Canvas />);
+
+        fireEvent.keyDown(window, { key: "a", ctrlKey: true });
+
+        expect(useCanvasStore.getState().selectedIds).toEqual([]);
+    });
 });
