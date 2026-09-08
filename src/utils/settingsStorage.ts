@@ -25,6 +25,7 @@ export interface PersistedSettings {
     autosave: boolean;
     autosaveMethod: AutosaveMethod;
     autosaveInterval: number;
+    canvasBackgroundColor: string;
 }
 
 const isFiniteNumber = (value: unknown): value is number =>
@@ -119,6 +120,9 @@ export const loadSettings = (): PersistedSettings => {
                 data.autosaveInterval
             );
         }
+        if (typeof data.canvasBackgroundColor === "string") {
+            settings.canvasBackgroundColor = data.canvasBackgroundColor;
+        }
         return settings;
     } catch {
         return getDefaultSettings();
@@ -136,4 +140,5 @@ export const getDefaultSettings = (): PersistedSettings => ({
     autosave: false,
     autosaveMethod: "on_change",
     autosaveInterval: 30000,
+    canvasBackgroundColor: "#030712",
 });

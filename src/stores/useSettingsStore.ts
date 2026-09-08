@@ -19,6 +19,7 @@ interface SettingsActions {
     setAutosave: (value: boolean) => void;
     setAutosaveMethod: (value: AutosaveMethod) => void;
     setAutosaveInterval: (value: number) => void;
+    setCanvasBackgroundColor: (value: string) => void;
 }
 
 const initialState = loadSettings();
@@ -36,6 +37,8 @@ export const useSettingsStore = create<SettingsState & SettingsActions>(
         setAutosaveMethod: value => set({ autosaveMethod: value }),
         setAutosaveInterval: value =>
             set({ autosaveInterval: clampAutosaveInterval(value) }),
+        setCanvasBackgroundColor: value =>
+            set({ canvasBackgroundColor: value }),
     })
 );
 

@@ -134,6 +134,10 @@ export default function Canvas() {
         };
     }, [selectedShapes, isSingleLineLike, selectionFrame]);
 
+    const canvasBackgroundColor = useSettingsStore(
+        state => state.canvasBackgroundColor
+    );
+
     const getPosCompareToWorld = useCallback(
         (x: number, y: number): Point => ({
             x: (x - offset.x) / scale,
@@ -741,7 +745,8 @@ export default function Canvas() {
     return (
         <canvas
             id="whiteboard"
-            className={`w-dvw h-dvh bg-gray-950 ${getCursorClass()}`}
+            className={`w-dvw h-dvh ${getCursorClass()}`}
+            style={{ backgroundColor: canvasBackgroundColor }}
             ref={el => {
                 canvasRef.current = el;
                 if (el) resizeCanvas();
