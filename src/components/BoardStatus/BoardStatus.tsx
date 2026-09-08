@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useCanvasStore } from "@stores/useCanvasStore";
 import { loadBoard, saveBoard } from "@/utils/boardStorage";
 
@@ -7,13 +7,17 @@ type SaveStatus = "unsaved" | "saved" | "error";
 export default function BoardStatus() {
     const [status, setStatus] = useState<SaveStatus | null>(null);
     const [savedAt, setSavedAt] = useState<string | null>(null);
+    const isDirtyRef = useRef(false);
 
     useEffect(() => {
         const persist = (): boolean => {
             const { shapes, offset, scale } = useCanvasStore.getState();
             const ok = saveBoard(shapes, offset, scale);
             setStatus(ok ? "saved" : "error");
-            if (ok) setSavedAt(new Date().toLocaleTimeString());
+            if (ok) {
+                isDirtyRef.current = false;
+                setSavedAt(new Date().toLocaleTimeString());
+            }
             return ok;
         };
 
@@ -30,6 +34,7 @@ export default function BoardStatus() {
                 state.offset !== prev.offset ||
                 state.scale !== prev.scale
             ) {
+                isDirtyRef.current = true;
                 setStatus("unsaved");
             }
         });
@@ -48,9 +53,17 @@ export default function BoardStatus() {
         };
         window.addEventListener("keydown", onKeyDown);
 
+        const onBeforeUnload = (e: BeforeUnloadEvent) => {
+            if (!isDirtyRef.current) return;
+            e.preventDefault();
+            e.returnValue = "";
+        };
+        window.addEventListener("beforeunload", onBeforeUnload);
+
         return () => {
             unsubscribe();
             window.removeEventListener("keydown", onKeyDown);
+            window.removeEventListener("beforeunload", onBeforeUnload);
         };
     }, []);
 
