@@ -2,6 +2,7 @@ import { create } from "zustand";
 import {
     loadSettings,
     saveSettings,
+    clampAutosaveInterval,
     type AutosaveMethod,
     type PersistedSettings,
 } from "@/utils/settingsStorage";
@@ -33,7 +34,8 @@ export const useSettingsStore = create<SettingsState & SettingsActions>(
         setCornerRadius: value => set({ cornerRadius: value }),
         setAutosave: value => set({ autosave: value }),
         setAutosaveMethod: value => set({ autosaveMethod: value }),
-        setAutosaveInterval: value => set({ autosaveInterval: value }),
+        setAutosaveInterval: value =>
+            set({ autosaveInterval: clampAutosaveInterval(value) }),
     })
 );
 

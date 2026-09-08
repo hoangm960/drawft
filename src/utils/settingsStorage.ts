@@ -9,6 +9,9 @@ import {
 export const SETTINGS_STORAGE_KEY = "drawft:settings:v1";
 export const SETTINGS_STORAGE_VERSION = 1;
 
+export const MIN_AUTOSAVE_INTERVAL = 1000;
+export const MAX_AUTOSAVE_INTERVAL = 300000;
+
 export type AutosaveMethod = "on_change" | "interval";
 
 export interface PersistedSettings {
@@ -34,6 +37,9 @@ const isStrokePattern = (value: unknown): value is StrokePattern =>
 const isAutosaveMethod = (value: unknown): value is AutosaveMethod =>
     typeof value === "string" &&
     (value === "on_change" || value === "interval");
+
+export const clampAutosaveInterval = (interval: number): number =>
+    Math.min(Math.max(interval, MIN_AUTOSAVE_INTERVAL), MAX_AUTOSAVE_INTERVAL);
 
 const getStorage = (): Storage | null => {
     try {
@@ -109,7 +115,9 @@ export const loadSettings = (): PersistedSettings => {
             settings.autosaveMethod = data.autosaveMethod;
         }
         if (isFiniteNumber(data.autosaveInterval)) {
-            settings.autosaveInterval = data.autosaveInterval;
+            settings.autosaveInterval = clampAutosaveInterval(
+                data.autosaveInterval
+            );
         }
         return settings;
     } catch {

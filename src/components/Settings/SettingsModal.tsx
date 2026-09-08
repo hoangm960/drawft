@@ -205,13 +205,15 @@ function SaveSection() {
                         <div className="flex items-center gap-2">
                             <input
                                 type="number"
+                                min={1}
+                                max={300}
                                 value={autosaveInterval / 1000}
                                 onChange={e =>
                                     setAutosaveInterval(
                                         Number(e.target.value) * 1000
                                     )
                                 }
-                                className="w-20 bg-gray-700 border-gray-600 rounded-md p-1 text-sm"
+                                className="w-20 bg-gray-700 border-gray-600 rounded-md p-1 text-sm text-gray-200"
                             />
                             <span className="text-sm text-gray-400">
                                 seconds
