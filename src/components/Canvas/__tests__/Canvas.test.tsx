@@ -222,13 +222,17 @@ describe("Canvas", () => {
 
         const state = useCanvasStore.getState();
         expect(state.shapes.size).toEqual(1);
-        expect(state.shapes.get(0)).toEqual({
-            id: 0,
-            type: Tools.rect,
-            from: { x: 100, y: 100 },
-            to: { x: 200, y: 300 },
-            rotation: 0,
-        });
+        expect(state.shapes.get(0)).toEqual(
+            expect.objectContaining({
+                id: 0,
+                type: Tools.rect,
+                from: { x: 100, y: 100 },
+                to: { x: 200, y: 300 },
+                rotation: 0,
+                strokeWidth: 2,
+                strokeColor: "#ffffff",
+            })
+        );
     });
 
     test("pans the canvas with the pan tool", () => {
