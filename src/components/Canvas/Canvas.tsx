@@ -692,15 +692,31 @@ export default function Canvas() {
         e => {
             const zoomCoef = 0.001;
             const zoomRange = [0.1, 5];
-
             const zoomAmount = -e.deltaY * zoomCoef;
+
+            const rect = e.currentTarget.getBoundingClientRect();
+            const cursor = {
+                x: e.clientX - rect.left,
+                y: e.clientY - rect.top,
+            };
+            const world = {
+                x: (cursor.x - offset.x) / scale,
+                y: (cursor.y - offset.y) / scale,
+            };
+
             const newScale = Math.min(
                 Math.max(zoomRange[0], scale + zoomAmount),
                 zoomRange[1]
             );
+            if (newScale === scale) return;
             setScale(newScale);
+            const newOffset = {
+                x: cursor.x - world.x * newScale,
+                y: cursor.y - world.y * newScale,
+            };
+            setOffset(newOffset);
         },
-        [scale, setScale]
+        [offset, scale, setOffset, setScale]
     );
 
     const getCursorClass = () => {
