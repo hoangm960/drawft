@@ -100,7 +100,10 @@ export const loadSettings = (): PersistedSettings => {
         if (isFiniteNumber(data.strokeWidth)) {
             settings.strokeWidth = data.strokeWidth;
         }
-        if (typeof data.strokeColor === "string" || data.strokeColor === undefined) {
+        if (
+            typeof data.strokeColor === "string" ||
+            data.strokeColor === undefined
+        ) {
             settings.strokeColor = data.strokeColor;
         }
         if (isStrokePattern(data.strokePattern)) {
@@ -129,7 +132,10 @@ export const loadSettings = (): PersistedSettings => {
                 data.autosaveInterval
             );
         }
-        if (typeof data.canvasBackgroundColor === "string" || data.canvasBackgroundColor === undefined) {
+        if (
+            typeof data.canvasBackgroundColor === "string" ||
+            data.canvasBackgroundColor === undefined
+        ) {
             settings.canvasBackgroundColor = data.canvasBackgroundColor;
         }
         return settings;

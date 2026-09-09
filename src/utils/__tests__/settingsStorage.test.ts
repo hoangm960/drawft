@@ -15,14 +15,14 @@ describe("settingsStorage", () => {
             strokeWidth: 10,
             strokeColor: "#ff0000",
             strokePattern: "dashed" as const,
-        fillColor: "#00ff00",
-        opacity: 0.5,
-        cornerRadius: 0,
-        autosave: false,
-        autosaveMethod: "on_change",
-        autosaveInterval: 30000,
-        theme: "system",
-    };
+            fillColor: "#00ff00",
+            opacity: 0.5,
+            cornerRadius: 0,
+            autosave: false,
+            autosaveMethod: "on_change",
+            autosaveInterval: 30000,
+            theme: "system",
+        };
         saveSettings(settings);
         const loaded = loadSettings();
         expect(loaded).toEqual({ ...settings, version: 1 });

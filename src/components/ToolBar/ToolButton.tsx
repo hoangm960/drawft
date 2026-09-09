@@ -31,11 +31,7 @@ export default function ToolButton({
                     : "bg-transparent dark:bg-gray-300 hover:bg-gray-100 dark:hover:bg-white"
             } ${disabled ? "opacity-50 pointer-events-none" : ""}`}
             onClick={handleClick}>
-            <img
-                src={icon}
-                alt={tooltip}
-                className="max-w-full max-h-full"
-            />
+            <img src={icon} alt={tooltip} className="max-w-full max-h-full" />
         </button>
     );
 }

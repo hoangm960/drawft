@@ -2,6 +2,7 @@ import { useRef, useCallback, useEffect, useMemo, useState } from "react";
 import { useTool } from "@stores/useToolStore";
 import { useCanvasStore } from "@stores/useCanvasStore";
 import { useSettingsStore } from "@stores/useSettingsStore";
+import { useIsDarkMode } from "@/hooks/useIsDarkMode";
 import {
     DEFAULT_FILL,
     DEFAULT_OPACITY,
@@ -137,15 +138,7 @@ export default function Canvas() {
     const canvasBackgroundColor = useSettingsStore(
         state => state.canvasBackgroundColor
     );
-    const theme = useSettingsStore(state => state.theme);
-    const [systemIsDark, setSystemIsDark] = useState(() => typeof window !== 'undefined' && window.matchMedia("(prefers-color-scheme: dark)").matches);
-    useEffect(() => {
-        const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
-        const handler = (e: MediaQueryListEvent) => setSystemIsDark(e.matches);
-        mediaQuery.addEventListener("change", handler);
-        return () => mediaQuery.removeEventListener("change", handler);
-    }, []);
-    const isDark = theme === "dark" || (theme === "system" && systemIsDark);
+    const isDark = useIsDarkMode();
     const themeDefaultStrokeColor = isDark ? "#ffffff" : "#000000";
 
     const getPosCompareToWorld = useCallback(
@@ -200,8 +193,7 @@ export default function Canvas() {
                     ctx.translate(-center.x, -center.y);
                 }
                 ctx.globalAlpha = shape.opacity ?? DEFAULT_OPACITY;
-                ctx.strokeStyle =
-                    shape.strokeColor ?? themeDefaultStrokeColor;
+                ctx.strokeStyle = shape.strokeColor ?? themeDefaultStrokeColor;
                 ctx.fillStyle = shape.fillColor ?? DEFAULT_FILL.fillColor;
                 ctx.lineWidth =
                     (shape.strokeWidth ?? DEFAULT_STROKE.strokeWidth) / scale;
@@ -757,7 +749,11 @@ export default function Canvas() {
         <canvas
             id="whiteboard"
             className={`w-dvw h-dvh ${getCursorClass()} bg-white dark:bg-[#030712]`}
-            style={canvasBackgroundColor ? { backgroundColor: canvasBackgroundColor } : undefined}
+            style={
+                canvasBackgroundColor
+                    ? { backgroundColor: canvasBackgroundColor }
+                    : undefined
+            }
             ref={el => {
                 canvasRef.current = el;
                 if (el) resizeCanvas();

@@ -1,10 +1,7 @@
 import { useEffect } from "react";
 import { useSettingsStore } from "@stores/useSettingsStore";
 import type { StrokePattern } from "@/types";
-
-interface SettingsModalProps {
-    onClose: () => void;
-}
+import { useIsDarkMode } from "@/hooks/useIsDarkMode";
 
 interface SettingsModalProps {
     onClose: () => void;
@@ -26,10 +23,9 @@ function DefaultStylingSection() {
         setFillColor,
         setOpacity,
         setCornerRadius,
-        theme,
     } = useSettingsStore();
 
-    const isDark = theme === "dark" || (theme === "system" && window.matchMedia("(prefers-color-scheme: dark)").matches);
+    const isDark = useIsDarkMode();
     const themeDefaultStrokeColor = isDark ? "#ffffff" : "#000000";
 
     return (
@@ -179,7 +175,9 @@ function SaveSection() {
                 Save Options
             </h3>
             <div className="flex items-center justify-between">
-                <label htmlFor="autosave" className="text-sm text-gray-700 dark:text-gray-400">
+                <label
+                    htmlFor="autosave"
+                    className="text-sm text-gray-700 dark:text-gray-400">
                     Autosave enabled
                 </label>
                 <input
@@ -192,7 +190,9 @@ function SaveSection() {
             </div>
             {autosave && (
                 <div className="space-y-2">
-                    <div className="text-sm text-gray-700 dark:text-gray-400">Autosave method</div>
+                    <div className="text-sm text-gray-700 dark:text-gray-400">
+                        Autosave method
+                    </div>
                     <div className="flex gap-4">
                         <label className="flex items-center gap-2 text-sm text-gray-800 dark:text-gray-300">
                             <input
@@ -245,9 +245,8 @@ function SaveSection() {
 function CanvasBackgroundSection() {
     const { canvasBackgroundColor, setCanvasBackgroundColor } =
         useSettingsStore();
-    
-    const { theme } = useSettingsStore();
-    const isDark = theme === "dark" || (theme === "system" && window.matchMedia("(prefers-color-scheme: dark)").matches);
+
+    const isDark = useIsDarkMode();
     const defaultColor = isDark ? "#030712" : "#ffffff";
 
     return (
@@ -258,8 +257,7 @@ function CanvasBackgroundSection() {
                     <button
                         type="button"
                         onClick={() => setCanvasBackgroundColor(undefined)}
-                        className="text-xs px-2 py-1 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded hover:bg-gray-300 dark:hover:bg-gray-600"
-                    >
+                        className="text-xs px-2 py-1 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded hover:bg-gray-300 dark:hover:bg-gray-600">
                         Reset to Theme Default
                     </button>
                 )}
@@ -292,7 +290,9 @@ function ThemeSection() {
             </h3>
             <div className="flex gap-4">
                 {(["system", "light", "dark"] as const).map(t => (
-                    <label key={t} className="flex items-center gap-2 text-sm text-gray-800 dark:text-gray-300 capitalize cursor-pointer">
+                    <label
+                        key={t}
+                        className="flex items-center gap-2 text-sm text-gray-800 dark:text-gray-300 capitalize cursor-pointer">
                         <input
                             type="radio"
                             name="theme"
@@ -331,7 +331,9 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
                 className="bg-white dark:bg-gray-800 rounded-2xl w-full max-w-md shadow-xl"
                 onClick={e => e.stopPropagation()}>
                 <header className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
-                    <h2 className="text-xl font-bold text-gray-900 dark:text-white">Settings</h2>
+                    <h2 className="text-xl font-bold text-gray-900 dark:text-white">
+                        Settings
+                    </h2>
                     <button
                         type="button"
                         onClick={onClose}

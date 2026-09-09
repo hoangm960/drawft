@@ -3,14 +3,14 @@ import { useCanvasStore } from "@stores/useCanvasStore";
 import { useSettingsStore } from "@stores/useSettingsStore";
 import { clampOpacity } from "@/utils/shapes";
 import { Tools, type Shape, type StrokePattern } from "@/types";
+import { useIsDarkMode } from "@/hooks/useIsDarkMode";
 
 const PATTERNS: StrokePattern[] = ["solid", "dashed", "dotted"];
 
 export default function ShapeSettings() {
     const { shapes, selectedIds, updateSelectedShapes } = useCanvasStore();
     const defaultSettings = useSettingsStore();
-    const { theme } = defaultSettings;
-    const isDark = theme === "dark" || (theme === "system" && window.matchMedia("(prefers-color-scheme: dark)").matches);
+    const isDark = useIsDarkMode();
     const themeDefaultStrokeColor = isDark ? "#ffffff" : "#000000";
 
     const pendingSnapshotRef = useRef<Map<number, Shape> | null>(null);
@@ -64,7 +64,9 @@ export default function ShapeSettings() {
     return (
         <div className="flex flex-col gap-3">
             <div className="flex items-center justify-between">
-                <span className="text-xs text-gray-700 dark:text-gray-300">Stroke</span>
+                <span className="text-xs text-gray-700 dark:text-gray-300">
+                    Stroke
+                </span>
                 {isDisabled && (
                     <span className="text-xs text-gray-500">Defaults</span>
                 )}
@@ -98,7 +100,9 @@ export default function ShapeSettings() {
                 </div>
 
                 <div className="flex flex-col gap-1">
-                    <span className="text-xs text-gray-700 dark:text-gray-300">Pattern</span>
+                    <span className="text-xs text-gray-700 dark:text-gray-300">
+                        Pattern
+                    </span>
                     <div className="flex gap-1">
                         {PATTERNS.map(p => (
                             <button
@@ -121,7 +125,9 @@ export default function ShapeSettings() {
                 </div>
 
                 <div className="flex flex-col gap-1">
-                    <span className="text-xs text-gray-700 dark:text-gray-300">Color</span>
+                    <span className="text-xs text-gray-700 dark:text-gray-300">
+                        Color
+                    </span>
                     <div className="flex items-center gap-2">
                         <input
                             type="color"
@@ -155,7 +161,9 @@ export default function ShapeSettings() {
                 </div>
             </div>
 
-            <span className="text-xs text-gray-700 dark:text-gray-300">Fill</span>
+            <span className="text-xs text-gray-700 dark:text-gray-300">
+                Fill
+            </span>
 
             <div
                 className={`flex items-center gap-2 ${
@@ -189,7 +197,9 @@ export default function ShapeSettings() {
                 </button>
             </div>
 
-            <span className="text-xs text-gray-700 dark:text-gray-300">Opacity</span>
+            <span className="text-xs text-gray-700 dark:text-gray-300">
+                Opacity
+            </span>
 
             <div
                 className={`flex flex-col gap-1 ${
@@ -220,7 +230,9 @@ export default function ShapeSettings() {
 
             {showCornerRadius && (
                 <>
-                    <span className="text-xs text-gray-700 dark:text-gray-300">Corner</span>
+                    <span className="text-xs text-gray-700 dark:text-gray-300">
+                        Corner
+                    </span>
                     <div className="flex flex-col gap-1">
                         <span className="text-xs text-gray-700 dark:text-gray-300">
                             Radius{" "}
