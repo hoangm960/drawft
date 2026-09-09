@@ -158,6 +158,28 @@ describe("boardStorage", () => {
         expect(loadBoard()?.shapes).toEqual([valid]);
     });
 
+    test("loadBoard filters out shapes with invalid styling properties", () => {
+        const valid = makeShape(1, { x: 0, y: 0 }, { x: 10, y: 10 }, Tools.rect);
+        localStorage.setItem(
+            BOARD_STORAGE_KEY,
+            JSON.stringify({
+                version: 1,
+                shapes: [
+                    valid,
+                    { ...valid, id: 2, strokeWidth: "5" },
+                    { ...valid, id: 3, strokeColor: 123 },
+                    { ...valid, id: 4, strokePattern: "wavy" },
+                    { ...valid, id: 5, fillColor: true },
+                    { ...valid, id: 6, cornerRadius: "10" },
+                ],
+                offset: { x: 0, y: 0 },
+                scale: 1,
+            })
+        );
+
+        expect(loadBoard()?.shapes).toEqual([valid]);
+    });
+
     test("saveBoard returns false when storage throws", () => {
         jest.spyOn(Storage.prototype, "setItem").mockImplementation(() => {
             throw new Error("quota exceeded");
@@ -166,6 +188,38 @@ describe("boardStorage", () => {
             expect(saveBoard(new Map(), { x: 0, y: 0 }, 1)).toBe(false);
         } finally {
             jest.restoreAllMocks();
+        }
+    });
+
+    test("loadBoard returns null when storage.getItem throws", () => {
+        jest.spyOn(Storage.prototype, "getItem").mockImplementation(() => {
+            throw new Error("storage error");
+        });
+        try {
+            expect(loadBoard()).toBeNull();
+        } finally {
+            jest.restoreAllMocks();
+        }
+    });
+
+    test("functions handle when localStorage throws on access", () => {
+        const originalLocalStorage = Object.getOwnPropertyDescriptor(global, "localStorage");
+        
+        Object.defineProperty(global, "localStorage", {
+            get: () => {
+                throw new Error("Access denied");
+            },
+            configurable: true,
+        });
+
+        try {
+            expect(loadBoard()).toBeNull();
+        } finally {
+            if (originalLocalStorage) {
+                Object.defineProperty(global, "localStorage", originalLocalStorage);
+            } else {
+                delete (global as any).localStorage;
+            }
         }
     });
 
