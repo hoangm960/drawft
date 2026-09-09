@@ -19,9 +19,9 @@ describe("settingsStorage", () => {
             opacity: 0.5,
             cornerRadius: 0,
             autosave: false,
-            autosaveMethod: "on_change",
+            autosaveMethod: "on_change" as const,
             autosaveInterval: 30000,
-            theme: "system",
+            theme: "system" as const,
         };
         saveSettings(settings);
         const loaded = loadSettings();

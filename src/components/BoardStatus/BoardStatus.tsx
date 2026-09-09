@@ -66,7 +66,6 @@ export default function BoardStatus() {
         const onBeforeUnload = (e: BeforeUnloadEvent) => {
             if (!isDirty) return;
             e.preventDefault();
-            e.returnValue = "";
         };
         window.addEventListener("beforeunload", onBeforeUnload);
 

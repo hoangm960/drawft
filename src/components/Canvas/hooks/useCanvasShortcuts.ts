@@ -4,7 +4,7 @@ import { useTool } from "@stores/useToolStore";
 import { Tools, type Point } from "@/types";
 
 export function useCanvasShortcuts(
-    cursorWorldPosRef: React.MutableRefObject<Point | null>,
+    cursorWorldPosRef: React.RefObject<Point | null>,
     getPosCompareToWorld: (x: number, y: number) => Point
 ) {
     const {
