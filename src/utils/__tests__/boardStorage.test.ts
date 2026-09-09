@@ -1,7 +1,7 @@
 import { Tools } from "@/types";
 import { makeShape } from "@/test/factories";
+import { BOARD_STORAGE_KEY } from "@/constants";
 import {
-    BOARD_STORAGE_KEY,
     clearBoard,
     loadBoard,
     saveBoard,

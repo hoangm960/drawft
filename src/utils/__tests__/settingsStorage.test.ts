@@ -1,8 +1,8 @@
+import { SETTINGS_STORAGE_KEY } from "@/constants";
 import {
     saveSettings,
     loadSettings,
     getDefaultSettings,
-    SETTINGS_STORAGE_KEY,
 } from "../settingsStorage";
 
 describe("settingsStorage", () => {

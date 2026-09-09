@@ -6,29 +6,13 @@ import type {
     CornerHandle,
     ResizeHandle,
     StrokePattern,
-    StrokeStyle,
-    FillStyle,
 } from "@/types";
-
-export const DEFAULT_STROKE: Required<StrokeStyle> = {
-    strokeWidth: 2,
-    strokeColor: "#ffffff",
-    strokePattern: "solid",
-};
-
-export const DEFAULT_FILL: Required<FillStyle> = {
-    fillColor: "transparent",
-};
-
-export const DEFAULT_OPACITY = 1;
-
-export const DEFAULT_CORNER_RADIUS = 20;
-
-export const STROKE_PATTERNS: Record<StrokePattern, number[]> = {
-    solid: [],
-    dashed: [8, 8],
-    dotted: [2, 6],
-};
+import {
+    DEFAULT_STROKE,
+    DEFAULT_CORNER_RADIUS,
+    STROKE_PATTERNS,
+    ROTATE_HANDLE_PADDING,
+} from "@/constants";
 
 export const getStrokeDash = (pattern: StrokePattern): number[] =>
     STROKE_PATTERNS[pattern];
@@ -393,8 +377,6 @@ export const resizeShapesFromHandle = (
 
     return scaleShapesGroup(shapes, handle as CornerHandle, point);
 };
-
-export const ROTATE_HANDLE_PADDING = 50;
 
 export const getFrameRotateHandle = (
     corners: Point[],

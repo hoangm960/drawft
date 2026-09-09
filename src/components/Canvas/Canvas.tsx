@@ -12,24 +12,13 @@ import {
     rotatePoint,
     rotateShapesFromCenter,
 } from "@/utils/shapes";
+import { HANDLES_CURSORS, HANDLE_SIZE, ZOOM_COEF, ZOOM_RANGE } from "@/constants";
 import type { Handles, Point, Shape } from "@/types";
 import { Tools } from "@/types";
 import { useSelectionState } from "./hooks/useSelectionState";
 import { useCanvasShortcuts } from "./hooks/useCanvasShortcuts";
 import { useWindowSelection } from "./hooks/useWindowSelection";
 import { useCanvasDraw } from "./hooks/useCanvasDraw";
-
-const HANDLE_SIZE = 8;
-
-const HANDLES_CURSORS: Record<Handles, string> = {
-    nw: "cursor-nwse-resize",
-    ne: "cursor-nesw-resize",
-    se: "cursor-nwse-resize",
-    sw: "cursor-nesw-resize",
-    from: "cursor-move",
-    to: "cursor-move",
-    rotate: "cursor-grab",
-};
 
 export default function Canvas() {
     const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -424,9 +413,7 @@ export default function Canvas() {
 
     const handleWheel: React.WheelEventHandler<HTMLCanvasElement> = useCallback(
         e => {
-            const zoomCoef = 0.001;
-            const zoomRange = [0.1, 5];
-            const zoomAmount = -e.deltaY * zoomCoef;
+            const zoomAmount = -e.deltaY * ZOOM_COEF;
 
             const rect = e.currentTarget.getBoundingClientRect();
             const cursor = {
@@ -439,8 +426,8 @@ export default function Canvas() {
             };
 
             const newScale = Math.min(
-                Math.max(zoomRange[0], scale + zoomAmount),
-                zoomRange[1]
+                Math.max(ZOOM_RANGE[0], scale + zoomAmount),
+                ZOOM_RANGE[1]
             );
             if (newScale === scale) return;
             setScale(newScale);

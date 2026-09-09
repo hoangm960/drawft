@@ -1,10 +1,11 @@
 import { Tools } from "@/types";
 import type { Point, Shape } from "@/types";
-
-export const BOARD_STORAGE_KEY = "drawft:board:v1";
-export const BOARD_STORAGE_VERSION = 1;
-export const MIN_SCALE = 0.1;
-export const MAX_SCALE = 5;
+import {
+    BOARD_STORAGE_KEY,
+    BOARD_STORAGE_VERSION,
+    MIN_SCALE,
+    MAX_SCALE,
+} from "@/constants";
 
 export interface PersistedBoard {
     version: number;

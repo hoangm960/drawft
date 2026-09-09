@@ -4,13 +4,11 @@ import {
     DEFAULT_OPACITY,
     DEFAULT_STROKE,
     DEFAULT_FILL,
-} from "@/utils/shapes";
-
-export const SETTINGS_STORAGE_KEY = "drawft:settings:v1";
-export const SETTINGS_STORAGE_VERSION = 1;
-
-export const MIN_AUTOSAVE_INTERVAL = 1000;
-export const MAX_AUTOSAVE_INTERVAL = 300000;
+    SETTINGS_STORAGE_KEY,
+    SETTINGS_STORAGE_VERSION,
+    MIN_AUTOSAVE_INTERVAL,
+    MAX_AUTOSAVE_INTERVAL,
+} from "@/constants";
 
 export type AutosaveMethod = "on_change" | "interval";
 export type ThemeMode = "system" | "light" | "dark";

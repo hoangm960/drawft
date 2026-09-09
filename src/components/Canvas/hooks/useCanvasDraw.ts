@@ -1,16 +1,17 @@
 import { useCallback } from "react";
 import {
-    DEFAULT_FILL,
-    DEFAULT_OPACITY,
-    DEFAULT_STROKE,
     getBoundingBoxForShapes,
     getShapeCenter,
     getShapePath,
     getStrokeDashScaled,
 } from "@/utils/shapes";
+import {
+    DEFAULT_FILL,
+    DEFAULT_OPACITY,
+    DEFAULT_STROKE,
+    HANDLE_SIZE,
+} from "@/constants";
 import type { Shape, Handles, Point, BoundingBox } from "@/types";
-
-const HANDLE_SIZE = 8;
 
 export function useCanvasDraw(
     shapes: Map<number, Shape>,
