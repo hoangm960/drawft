@@ -12,7 +12,12 @@ import {
     rotatePoint,
     rotateShapesFromCenter,
 } from "@/utils/shapes";
-import { HANDLES_CURSORS, HANDLE_SIZE, ZOOM_COEF, ZOOM_RANGE } from "@/constants";
+import {
+    HANDLES_CURSORS,
+    HANDLE_SIZE,
+    ZOOM_COEF,
+    ZOOM_RANGE,
+} from "@/constants";
 import type { Handles, Point, Shape } from "@/types";
 import { Tools } from "@/types";
 import { useSelectionState } from "./hooks/useSelectionState";

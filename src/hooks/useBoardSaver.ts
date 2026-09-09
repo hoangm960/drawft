@@ -16,7 +16,6 @@ export function useBoardSaver() {
 
     const persist = useCallback(async () => {
         setStatus("saving");
-        // Artificial delay so the "Saving..." state is visible
         await new Promise(resolve => setTimeout(resolve, 300));
 
         const { shapes, offset, scale } = useCanvasStore.getState();

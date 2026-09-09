@@ -75,7 +75,6 @@ export default function BoardStatus() {
     }, [isDirty]);
 
     useEffect(() => {
-        // Cleanup previous timers
         if (timeoutRef.current) clearTimeout(timeoutRef.current);
         if (intervalRef.current) clearInterval(intervalRef.current);
 

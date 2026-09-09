@@ -52,13 +52,10 @@ describe("App", () => {
 
     test("applies dark class to document root when dark mode is enabled", () => {
         useSettingsStore.getState().setTheme("dark");
-        // Force the hook to return true by faking the system preference if it's set to 'system'
-        // But since we set it to 'dark', useIsDarkMode should return true anyway.
         render(<App />);
 
         expect(document.documentElement).toHaveClass("dark");
-        
-        // Clean up to not affect other tests
+
         document.documentElement.classList.remove("dark");
     });
 });

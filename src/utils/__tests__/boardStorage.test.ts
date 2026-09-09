@@ -159,7 +159,12 @@ describe("boardStorage", () => {
     });
 
     test("loadBoard filters out shapes with invalid styling properties", () => {
-        const valid = makeShape(1, { x: 0, y: 0 }, { x: 10, y: 10 }, Tools.rect);
+        const valid = makeShape(
+            1,
+            { x: 0, y: 0 },
+            { x: 10, y: 10 },
+            Tools.rect
+        );
         localStorage.setItem(
             BOARD_STORAGE_KEY,
             JSON.stringify({
@@ -203,8 +208,11 @@ describe("boardStorage", () => {
     });
 
     test("functions handle when localStorage throws on access", () => {
-        const originalLocalStorage = Object.getOwnPropertyDescriptor(global, "localStorage");
-        
+        const originalLocalStorage = Object.getOwnPropertyDescriptor(
+            global,
+            "localStorage"
+        );
+
         Object.defineProperty(global, "localStorage", {
             get: () => {
                 throw new Error("Access denied");
@@ -216,9 +224,13 @@ describe("boardStorage", () => {
             expect(loadBoard()).toBeNull();
         } finally {
             if (originalLocalStorage) {
-                Object.defineProperty(global, "localStorage", originalLocalStorage);
+                Object.defineProperty(
+                    global,
+                    "localStorage",
+                    originalLocalStorage
+                );
             } else {
-                delete (global as any).localStorage;
+                delete (global as Record<string, unknown>).localStorage;
             }
         }
     });

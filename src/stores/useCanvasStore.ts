@@ -131,8 +131,6 @@ const createActions = () => {
 
 const actions = createActions();
 
-// This store acts as a facade/adapter for backwards compatibility
-// during the transition, composing Document and UI actions.
 export const useCanvasStore = () => {
     const docStore = useDocumentStore();
     const uiStore = useUIStore();

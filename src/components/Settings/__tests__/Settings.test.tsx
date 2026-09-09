@@ -41,7 +41,7 @@ describe("Settings", () => {
         render(<Settings />);
         fireEvent.click(screen.getByTitle("Settings"));
         fireEvent.keyDown(window, { key: "Enter", code: "Enter" });
-        expect(screen.getByRole("dialog")).toBeInTheDocument(); // still open
+        expect(screen.getByRole("dialog")).toBeInTheDocument();
 
         fireEvent.keyDown(window, { key: "Escape", code: "Escape" });
         expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
@@ -50,7 +50,7 @@ describe("Settings", () => {
     test("closes the modal when clicking on the backdrop", () => {
         render(<Settings />);
         fireEvent.click(screen.getByTitle("Settings"));
-        fireEvent.click(screen.getByRole("dialog")); // This is the backdrop
+        fireEvent.click(screen.getByRole("dialog"));
         expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
     });
 
@@ -106,7 +106,6 @@ describe("Settings", () => {
         render(<Settings />);
         fireEvent.click(screen.getByTitle("Settings"));
 
-        // Stroke color
         const strokeColorInput = screen.getByLabelText("Stroke color");
         fireEvent.change(strokeColorInput, { target: { value: "#ff0000" } });
         expect(useSettingsStore.getState().strokeColor).toBe("#ff0000");
@@ -115,7 +114,6 @@ describe("Settings", () => {
         fireEvent.click(autoButton);
         expect(useSettingsStore.getState().strokeColor).toBeUndefined();
 
-        // Fill color
         const fillColorInput = screen.getByLabelText("Fill color");
         fireEvent.change(fillColorInput, { target: { value: "#00ff00" } });
         expect(useSettingsStore.getState().fillColor).toBe("#00ff00");
@@ -124,7 +122,6 @@ describe("Settings", () => {
         fireEvent.click(noneButton);
         expect(useSettingsStore.getState().fillColor).toBe("transparent");
 
-        // Corner radius
         const cornerRadiusSlider = screen.getByLabelText(/Corner radius/);
         fireEvent.change(cornerRadiusSlider, { target: { value: "25" } });
         expect(useSettingsStore.getState().cornerRadius).toBe(25);
@@ -136,18 +133,24 @@ describe("Settings", () => {
 
         const bgColorInput = screen.getByLabelText("Background color");
         fireEvent.change(bgColorInput, { target: { value: "#123456" } });
-        expect(useSettingsStore.getState().canvasBackgroundColor).toBe("#123456");
+        expect(useSettingsStore.getState().canvasBackgroundColor).toBe(
+            "#123456"
+        );
 
         const resetButton = screen.getByText("Reset to Theme Default");
         fireEvent.click(resetButton);
-        expect(useSettingsStore.getState().canvasBackgroundColor).toBeUndefined();
+        expect(
+            useSettingsStore.getState().canvasBackgroundColor
+        ).toBeUndefined();
     });
 
     test("updates SaveSection controls and store", () => {
         render(<Settings />);
         fireEvent.click(screen.getByTitle("Settings"));
 
-        const autosaveCheckbox = screen.getByLabelText("Autosave enabled") as HTMLInputElement;
+        const autosaveCheckbox = screen.getByLabelText(
+            "Autosave enabled"
+        ) as HTMLInputElement;
         if (!autosaveCheckbox.checked) {
             fireEvent.click(autosaveCheckbox);
         }

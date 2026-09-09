@@ -29,7 +29,6 @@ describe("BoardStatus", () => {
 
     test("hydrates the store from localStorage and shows the saved state", () => {
         const shape = makeShape(1, { x: 0, y: 0 }, { x: 10, y: 10 });
-        // Manually mock the loadBoard functionality for this test
         jest.spyOn(Storage.prototype, "getItem").mockReturnValue(
             JSON.stringify({
                 version: 1,

@@ -3,7 +3,6 @@ import { getDefaultSettings } from "@/utils/settingsStorage";
 
 describe("useSettingsStore", () => {
     beforeEach(() => {
-        // Reset store to initial state before each test
         useSettingsStore.setState(getDefaultSettings());
     });
 

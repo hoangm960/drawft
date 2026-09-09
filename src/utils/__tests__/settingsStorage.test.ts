@@ -57,7 +57,7 @@ describe("settingsStorage", () => {
     test("should clamp autosaveInterval below minimum", () => {
         const settings = {
             version: 1,
-            autosaveInterval: 500, // Below 1000
+            autosaveInterval: 500,
         };
         localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify(settings));
         const loaded = loadSettings();
@@ -67,7 +67,7 @@ describe("settingsStorage", () => {
     test("should clamp autosaveInterval above maximum", () => {
         const settings = {
             version: 1,
-            autosaveInterval: 400000, // Above 300000
+            autosaveInterval: 400000,
         };
         localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify(settings));
         const loaded = loadSettings();

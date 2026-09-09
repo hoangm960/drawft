@@ -1,9 +1,6 @@
 import { Tools, type Shape } from "@/types";
 import { getCalls, makeBBox, makeShape } from "@/test/factories";
-import {
-    DEFAULT_STROKE,
-    STROKE_PATTERNS,
-} from "@/constants";
+import { DEFAULT_STROKE, STROKE_PATTERNS } from "@/constants";
 import {
     clampOpacity,
     drawArrow,

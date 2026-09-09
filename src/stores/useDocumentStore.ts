@@ -215,8 +215,6 @@ export const useDocumentStore = create<DocumentState & DocumentActions>(
             if (clipboard.length === 0)
                 return { shapes: state.shapes, newIds: [] };
 
-            // We calculate bounding box outside to avoid dependency cycles if possible,
-            // or just accept the target as the exact offset point
             const newShapes = new Map(state.shapes);
             const newIds: number[] = [];
             let nextId = state.getNextId();
