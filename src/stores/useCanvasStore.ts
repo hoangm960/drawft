@@ -1,409 +1,242 @@
-import { create } from "zustand";
-import RBush from "rbush";
-import type { Shape, Point, BoundingBox } from "@/types";
+import type { Shape, Point } from "@/types";
 import type { PersistedBoard } from "@/utils/boardStorage";
-import {
-    getBoundingBox,
-    getBoundingBoxBounds,
-    getBoundingBoxForShapes,
-} from "@/utils/shapes";
+import { getBoundingBoxBounds, getBoundingBoxForShapes } from "@/utils/shapes";
+import { useDocumentStore } from "./useDocumentStore";
+import { useUIStore } from "./useUIStore";
 
 const PASTE_OFFSET = 10;
 
-type ShapeBBox = {
-    minX: number;
-    minY: number;
-    maxX: number;
-    maxY: number;
-    id: number;
-};
+// This store acts as a facade/adapter for backwards compatibility
+// during the transition, composing Document and UI actions.
+export const useCanvasStore = () => {
+    const docStore = useDocumentStore();
+    const uiStore = useUIStore();
 
-interface CanvasState {
-    shapes: Map<number, Shape>;
-    shapeIndex: RBush<ShapeBBox>;
-    currentShape: Shape | null;
-    selectedIds: number[];
-    clipboard: Shape[];
-    isBoxSelecting: boolean;
-    selectionBox: BoundingBox | null;
-    isDragging: boolean;
-    isPanning: boolean;
-    offset: Point;
-    scale: number;
-    lastPos: Point;
-    startWorldPos: Point | null;
-    past: Map<number, Shape>[];
-    future: Map<number, Shape>[];
-}
-
-interface CanvasActions {
-    addShape: (shape: Shape) => void;
-    updateShape: (id: number, updates: Partial<Shape>) => void;
-    updateSelectedShapes: (updates: Partial<Shape>) => void;
-    deleteShapes: (ids: number[]) => void;
-    setClipboard: (shapes: Shape[]) => void;
-    copySelectedShapes: () => void;
-    pasteShapes: (target: Point) => void;
-    duplicateSelectedShapes: () => void;
-    setCurrentShape: (shape: Shape | null) => void;
-    setSelectedIds: (ids: number[]) => void;
-    setSelectedAll: () => void;
-    toggleSelectedIds: (id: number, multi: boolean) => void;
-    setSelectionBox: (box: BoundingBox | null) => void;
-    setIsBoxSelecting: (value: boolean) => void;
-    setIsDragging: (value: boolean) => void;
-    setIsPanning: (value: boolean) => void;
-    setOffset: (offset: Point) => void;
-    setScale: (scale: number) => void;
-    setLastPos: (pos: Point) => void;
-    setStartWorldPos: (pos: Point | null) => void;
-    moveSelectedShapes: (dx: number, dy: number) => void;
-    selectShapesInBox: () => void;
-    getNextId: () => number;
-    undo: () => void;
-    redo: () => void;
-    commitHistory: (snapshot: Map<number, Shape>) => void;
-    loadPersistedBoard: (board: PersistedBoard) => void;
-    reset: () => void;
-}
-
-function shapeBBox(shape: Shape): ShapeBBox {
-    return { ...getBoundingBoxBounds(getBoundingBox(shape)), id: shape.id };
-}
-
-const sameBBoxId = (a: ShapeBBox, b: ShapeBBox) => a.id === b.id;
-
-const cloneShapesMap = (shapes: Map<number, Shape>): Map<number, Shape> =>
-    new Map(
-        [...shapes].map(([id, shape]) => [
-            id,
-            { ...shape, from: { ...shape.from }, to: { ...shape.to } },
-        ])
-    );
-
-const rebuildShapeIndex = (shapes: Map<number, Shape>): RBush<ShapeBBox> => {
-    const index = new RBush<ShapeBBox>();
-    for (const shape of shapes.values()) {
-        index.insert(shapeBBox(shape));
-    }
-    return index;
-};
-
-const cloneShapes = (
-    state: CanvasState & CanvasActions,
-    shapes: Shape[],
-    dx: number,
-    dy: number
-) => {
-    const newShapes = new Map(state.shapes);
-    const ids: number[] = [];
-    let nextId = state.getNextId();
-    for (const shape of shapes) {
-        const copy: Shape = {
-            ...shape,
-            id: nextId++,
-            from: { x: shape.from.x + dx, y: shape.from.y + dy },
-            to: { x: shape.to.x + dx, y: shape.to.y + dy },
-        };
-        newShapes.set(copy.id, copy);
-        state.shapeIndex.insert(shapeBBox(copy));
-        ids.push(copy.id);
-    }
-    return { shapes: newShapes, ids };
-};
-
-const recordHistory = (
-    get: () => CanvasState & CanvasActions,
-    set: (partial: Partial<CanvasState & CanvasActions>) => void
-) => {
-    set({ past: [...get().past, cloneShapesMap(get().shapes)], future: [] });
-};
-
-function createInitialState(): CanvasState {
     return {
-        shapes: new Map(),
-        shapeIndex: new RBush(),
-        currentShape: null,
-        selectedIds: [],
-        clipboard: [],
-        isBoxSelecting: false,
-        selectionBox: null,
-        isDragging: false,
-        isPanning: false,
-        offset: { x: 0, y: 0 },
-        scale: 1,
-        lastPos: { x: 0, y: 0 },
-        startWorldPos: null,
-        past: [],
-        future: [],
-    };
-}
+        ...docStore,
+        ...uiStore,
 
-const initialState = createInitialState();
-
-export const useCanvasStore = create<CanvasState & CanvasActions>(
-    (set, get) => ({
-        ...initialState,
-
-        getNextId: () => {
-            const state = get();
-            let maxId = -1;
-            for (const id of state.shapes.keys()) {
-                if (id > maxId) maxId = id;
-            }
-            return maxId + 1;
+        // Complex actions that cross boundaries
+        deleteShapes: (ids: number[]) => {
+            docStore.deleteShapes(ids);
+            uiStore.setSelectedIds(
+                uiStore.selectedIds.filter(id => !ids.includes(id))
+            );
         },
 
-        addShape: shape => {
-            recordHistory(get, set);
-            const newShapes = new Map(get().shapes);
-            newShapes.set(shape.id, shape);
-
-            get().shapeIndex.insert(shapeBBox(shape));
-
-            set({ shapes: newShapes });
+        updateSelectedShapes: (updates: Partial<Shape>) => {
+            docStore.updateSelectedShapes(uiStore.selectedIds, updates);
         },
 
-        updateShape: (id, updates) => {
-            const state = get();
-            const shape = state.shapes.get(id);
-            if (!shape) return;
-
-            const newShapes = new Map(state.shapes);
-            const updatedShape = { ...shape, ...updates };
-            newShapes.set(id, updatedShape);
-
-            state.shapeIndex.remove(shapeBBox(shape), sameBBoxId);
-            state.shapeIndex.insert(shapeBBox(updatedShape));
-
-            set({ shapes: newShapes });
+        moveSelectedShapes: (dx: number, dy: number) => {
+            docStore.moveShapes(uiStore.selectedIds, dx, dy);
         },
 
-        updateSelectedShapes: updates => {
-            const state = get();
-            const newShapes = new Map(state.shapes);
-
-            for (const id of state.selectedIds) {
-                const shape = newShapes.get(id);
-                if (!shape) continue;
-
-                state.shapeIndex.remove(shapeBBox(shape), sameBBoxId);
-
-                const updatedShape = { ...shape, ...updates };
-                newShapes.set(id, updatedShape);
-                state.shapeIndex.insert(shapeBBox(updatedShape));
-            }
-
-            set({ shapes: newShapes });
+        duplicateSelectedShapes: () => {
+            const result = docStore.duplicateShapes(
+                uiStore.selectedIds,
+                PASTE_OFFSET
+            );
+            uiStore.setSelectedIds(result.newIds);
         },
-
-        deleteShapes: ids => {
-            const state = get();
-            if (ids.length === 0) return;
-            recordHistory(get, set);
-            const newShapes = new Map(state.shapes);
-            for (const id of ids) {
-                const shape = newShapes.get(id);
-                if (shape) {
-                    state.shapeIndex.remove(shapeBBox(shape), sameBBoxId);
-                }
-                newShapes.delete(id);
-            }
-
-            set({
-                shapes: newShapes,
-                selectedIds: state.selectedIds.filter(id => !ids.includes(id)),
-            });
-        },
-
-        setClipboard: shapes => set({ clipboard: shapes }),
 
         copySelectedShapes: () => {
-            const state = get();
-            const selected = state.selectedIds
-                .map(id => state.shapes.get(id))
+            const selected = uiStore.selectedIds
+                .map(id => docStore.shapes.get(id))
                 .filter((s): s is Shape => s !== undefined);
             if (selected.length === 0) return;
-            set({
-                clipboard: selected.map(shape => ({
+            uiStore.setClipboard(
+                selected.map(shape => ({
                     ...shape,
                     from: { ...shape.from },
                     to: { ...shape.to },
-                })),
-            });
+                }))
+            );
         },
 
-        pasteShapes: target => {
-            const state = get();
-            if (state.clipboard.length === 0) return;
-
-            const box = getBoundingBoxForShapes(state.clipboard);
+        pasteShapes: (target: Point) => {
+            if (uiStore.clipboard.length === 0) return;
+            const box = getBoundingBoxForShapes(uiStore.clipboard);
             const center = {
                 x: (box.from.x + box.to.x) / 2,
                 y: (box.from.y + box.to.y) / 2,
             };
-            const { shapes, ids } = cloneShapes(
-                state,
-                state.clipboard,
-                target.x - center.x,
-                target.y - center.y
-            );
-            recordHistory(get, set);
-            set({ shapes, selectedIds: ids });
+            const result = docStore.pasteShapes(uiStore.clipboard, {
+                x: target.x - center.x,
+                y: target.y - center.y,
+            });
+            uiStore.setSelectedIds(result.newIds);
         },
-
-        duplicateSelectedShapes: () => {
-            const state = get();
-            const selected = state.selectedIds
-                .map(id => state.shapes.get(id))
-                .filter((s): s is Shape => s !== undefined);
-            if (selected.length === 0) return;
-
-            recordHistory(get, set);
-
-            const { shapes, ids } = cloneShapes(
-                state,
-                selected,
-                PASTE_OFFSET,
-                PASTE_OFFSET
-            );
-            set({ shapes, selectedIds: ids });
-        },
-
-        setCurrentShape: shape => set({ currentShape: shape }),
-
-        setSelectedIds: ids => set({ selectedIds: ids }),
 
         setSelectedAll: () => {
-            const allIds = [...get().shapes.keys()];
-            set({ selectedIds: allIds });
-        },
-
-        toggleSelectedIds: (id, multi) =>
-            set(state => {
-                if (multi) {
-                    return {
-                        selectedIds: state.selectedIds.includes(id)
-                            ? state.selectedIds.filter(i => i !== id)
-                            : [...state.selectedIds, id],
-                    };
-                }
-                return { selectedIds: [id] };
-            }),
-
-        setSelectionBox: box => set({ selectionBox: box }),
-
-        setIsBoxSelecting: value => set({ isBoxSelecting: value }),
-
-        setIsDragging: value => set({ isDragging: value }),
-
-        setIsPanning: value => set({ isPanning: value }),
-
-        setOffset: offset => set({ offset }),
-
-        setScale: scale => set({ scale }),
-
-        setLastPos: pos => set({ lastPos: pos }),
-
-        setStartWorldPos: pos => set({ startWorldPos: pos }),
-
-        moveSelectedShapes: (dx, dy) => {
-            const state = get();
-            const newShapes = new Map(state.shapes);
-
-            for (const id of state.selectedIds) {
-                const shape = newShapes.get(id);
-                if (!shape) continue;
-
-                state.shapeIndex.remove(shapeBBox(shape), sameBBoxId);
-
-                const updatedShape = {
-                    ...shape,
-                    from: { x: shape.from.x + dx, y: shape.from.y + dy },
-                    to: { x: shape.to.x + dx, y: shape.to.y + dy },
-                };
-                newShapes.set(id, updatedShape);
-                state.shapeIndex.insert(shapeBBox(updatedShape));
-            }
-
-            set({ shapes: newShapes });
+            uiStore.setSelectedIds([...docStore.shapes.keys()]);
         },
 
         selectShapesInBox: () => {
-            const state = get();
-            if (!state.selectionBox) return;
-
-            const boxBounds = getBoundingBoxBounds(state.selectionBox);
-
-            const found = state.shapeIndex.search({
+            if (!uiStore.selectionBox) return;
+            const boxBounds = getBoundingBoxBounds(uiStore.selectionBox);
+            const found = docStore.shapeIndex.search({
                 minX: boxBounds.minX,
                 minY: boxBounds.minY,
                 maxX: boxBounds.maxX,
                 maxY: boxBounds.maxY,
             });
-
-            const selected = found.map(item => item.id as number);
-            set({ selectedIds: selected });
+            uiStore.setSelectedIds(found.map(item => item.id as number));
         },
 
         undo: () => {
-            const state = get();
-            if (state.past.length === 0) return;
-
-            const previous = state.past[state.past.length - 1];
-            set({
-                past: state.past.slice(0, -1),
-                future: [...state.future, cloneShapesMap(state.shapes)],
-                shapes: previous,
-                shapeIndex: rebuildShapeIndex(previous),
-                selectedIds: [],
-            });
+            docStore.undo();
+            uiStore.setSelectedIds([]);
         },
 
         redo: () => {
-            const state = get();
-            if (state.future.length === 0) return;
-
-            const next = state.future[state.future.length - 1];
-            set({
-                future: state.future.slice(0, -1),
-                past: [...state.past, cloneShapesMap(state.shapes)],
-                shapes: next,
-                shapeIndex: rebuildShapeIndex(next),
-                selectedIds: [],
-            });
+            docStore.redo();
+            uiStore.setSelectedIds([]);
         },
 
-        commitHistory: snapshot => {
-            const state = get();
-            set({ past: [...state.past, snapshot], future: [] });
-        },
-
-        loadPersistedBoard: board => {
+        loadPersistedBoard: (board: PersistedBoard) => {
             const shapes = new Map<number, Shape>(
                 board.shapes.map(shape => [
                     shape.id,
-                    {
-                        ...shape,
-                        from: { ...shape.from },
-                        to: { ...shape.to },
-                    },
+                    { ...shape, from: { ...shape.from }, to: { ...shape.to } },
                 ])
             );
-            set({
-                shapes,
-                shapeIndex: rebuildShapeIndex(shapes),
-                offset: { ...board.offset },
-                scale: board.scale,
-                currentShape: null,
-                selectedIds: [],
-                selectionBox: null,
-                isBoxSelecting: false,
-                past: [],
-                future: [],
-            });
+            docStore.loadShapes(shapes);
+            uiStore.resetUI();
+            uiStore.setOffset({ ...board.offset });
+            uiStore.setScale(board.scale);
         },
 
-        reset: () => set(createInitialState()),
-    })
-);
+        reset: () => {
+            docStore.resetDocument();
+            uiStore.resetUI();
+        },
+    };
+};
+
+useCanvasStore.getState = () => {
+    return {
+        ...useDocumentStore.getState(),
+        ...useUIStore.getState(),
+
+        deleteShapes: (ids: number[]) => {
+            useDocumentStore.getState().deleteShapes(ids);
+            useUIStore
+                .getState()
+                .setSelectedIds(
+                    useUIStore
+                        .getState()
+                        .selectedIds.filter(id => !ids.includes(id))
+                );
+        },
+
+        commitHistory: (snapshot: Map<number, Shape>) => {
+            useDocumentStore.getState().commitHistory(snapshot);
+        },
+
+        selectShapesInBox: () => {
+            const uiState = useUIStore.getState();
+            const docState = useDocumentStore.getState();
+            if (!uiState.selectionBox) return;
+            const boxBounds = getBoundingBoxBounds(uiState.selectionBox);
+            const found = docState.shapeIndex.search({
+                minX: boxBounds.minX,
+                minY: boxBounds.minY,
+                maxX: boxBounds.maxX,
+                maxY: boxBounds.maxY,
+            });
+            uiState.setSelectedIds(found.map(item => item.id as number));
+        },
+
+        reset: () => {
+            useDocumentStore.getState().resetDocument();
+            useUIStore.getState().resetUI();
+        },
+
+        updateSelectedShapes: (updates: Partial<Shape>) => {
+            useDocumentStore
+                .getState()
+                .updateSelectedShapes(
+                    useUIStore.getState().selectedIds,
+                    updates
+                );
+        },
+
+        moveSelectedShapes: (dx: number, dy: number) => {
+            useDocumentStore
+                .getState()
+                .moveShapes(useUIStore.getState().selectedIds, dx, dy);
+        },
+
+        duplicateSelectedShapes: () => {
+            const result = useDocumentStore
+                .getState()
+                .duplicateShapes(
+                    useUIStore.getState().selectedIds,
+                    PASTE_OFFSET
+                );
+            useUIStore.getState().setSelectedIds(result.newIds);
+        },
+
+        copySelectedShapes: () => {
+            const uiState = useUIStore.getState();
+            const docState = useDocumentStore.getState();
+            const selected = uiState.selectedIds
+                .map(id => docState.shapes.get(id))
+                .filter((s): s is Shape => s !== undefined);
+            if (selected.length === 0) return;
+            uiState.setClipboard(
+                selected.map(shape => ({
+                    ...shape,
+                    from: { ...shape.from },
+                    to: { ...shape.to },
+                }))
+            );
+        },
+
+        pasteShapes: (target: Point) => {
+            const uiState = useUIStore.getState();
+            const docState = useDocumentStore.getState();
+            if (uiState.clipboard.length === 0) return;
+            const box = getBoundingBoxForShapes(uiState.clipboard);
+            const center = {
+                x: (box.from.x + box.to.x) / 2,
+                y: (box.from.y + box.to.y) / 2,
+            };
+            const result = docState.pasteShapes(uiState.clipboard, {
+                x: target.x - center.x,
+                y: target.y - center.y,
+            });
+            uiState.setSelectedIds(result.newIds);
+        },
+
+        setSelectedAll: () => {
+            useUIStore
+                .getState()
+                .setSelectedIds([...useDocumentStore.getState().shapes.keys()]);
+        },
+
+        undo: () => {
+            useDocumentStore.getState().undo();
+            useUIStore.getState().setSelectedIds([]);
+        },
+
+        redo: () => {
+            useDocumentStore.getState().redo();
+            useUIStore.getState().setSelectedIds([]);
+        },
+
+        loadPersistedBoard: (board: PersistedBoard) => {
+            const shapes = new Map<number, Shape>(
+                board.shapes.map(shape => [
+                    shape.id,
+                    { ...shape, from: { ...shape.from }, to: { ...shape.to } },
+                ])
+            );
+            useDocumentStore.getState().loadShapes(shapes);
+            useUIStore.getState().resetUI();
+            useUIStore.getState().setOffset({ ...board.offset });
+            useUIStore.getState().setScale(board.scale);
+        },
+    };
+};

@@ -1,5 +1,7 @@
 import { useEffect, useRef, useCallback } from "react";
 import { useCanvasStore } from "@stores/useCanvasStore";
+import { useDocumentStore } from "@stores/useDocumentStore";
+import { useUIStore } from "@stores/useUIStore";
 import { useSettingsStore } from "@stores/useSettingsStore";
 import { loadBoard } from "@/utils/boardStorage";
 import { useBoardSaver } from "@/hooks/useBoardSaver";
@@ -27,12 +29,14 @@ export default function BoardStatus() {
     }, []);
 
     useEffect(() => {
-        const canvasSub = useCanvasStore.subscribe((state, prev) => {
-            if (
-                state.shapes !== prev.shapes ||
-                state.offset !== prev.offset ||
-                state.scale !== prev.scale
-            ) {
+        const docSub = useDocumentStore.subscribe((state, prev) => {
+            if (state.shapes !== prev.shapes) {
+                markAsDirty();
+            }
+        });
+
+        const uiSub = useUIStore.subscribe((state, prev) => {
+            if (state.offset !== prev.offset || state.scale !== prev.scale) {
                 markAsDirty();
             }
         });
@@ -52,7 +56,8 @@ export default function BoardStatus() {
         window.addEventListener("keydown", onKeyDown);
 
         return () => {
-            canvasSub();
+            docSub();
+            uiSub();
             window.removeEventListener("keydown", onKeyDown);
         };
     }, [persist, markAsDirty]);
