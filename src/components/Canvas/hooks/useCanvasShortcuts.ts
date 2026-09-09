@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { useCanvasStore } from "@stores/useCanvasStore";
 import { useTool } from "@stores/useToolStore";
 import { Tools, type Point } from "@/types";
@@ -17,6 +17,8 @@ export function useCanvasShortcuts(
         setSelectedAll,
     } = useCanvasStore();
 
+    const previousToolRef = useRef<Tools | null>(null);
+
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
             if (
@@ -25,6 +27,15 @@ export function useCanvasShortcuts(
             ) {
                 return;
             }
+
+            if (e.key === "Control" || e.key === "Meta") {
+                const toolStore = useTool.getState();
+                if (toolStore.tool !== Tools.pan) {
+                    previousToolRef.current = toolStore.tool;
+                    toolStore.setTool(Tools.pan);
+                }
+            }
+
             if (e.key === "Delete" || e.key === "Backspace") {
                 const state = useCanvasStore.getState();
                 if (state.selectedIds.length > 0) {
@@ -86,10 +97,22 @@ export function useCanvasShortcuts(
                 }
             }
         };
+
+        const handleKeyUp = (e: KeyboardEvent) => {
+            if (e.key === "Control" || e.key === "Meta") {
+                if (previousToolRef.current !== null) {
+                    useTool.getState().setTool(previousToolRef.current);
+                    previousToolRef.current = null;
+                }
+            }
+        };
+
         window.addEventListener("keydown", handleKeyDown);
+        window.addEventListener("keyup", handleKeyUp);
 
         return () => {
             window.removeEventListener("keydown", handleKeyDown);
+            window.removeEventListener("keyup", handleKeyUp);
         };
     }, [
         copySelectedShapes,

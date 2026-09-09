@@ -349,7 +349,7 @@ export default function Canvas() {
         );
 
     useEffect(() => {
-        if (tool !== Tools.select) {
+        if (tool !== Tools.select && tool !== Tools.pan) {
             setSelectedIds([]);
         }
     }, [tool, setSelectedIds]);
