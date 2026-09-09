@@ -301,34 +301,38 @@ export const resizeShapeFromHandle = (
 ): { from: Point; to: Point } =>
     resizePoints(shape.from, shape.to, handle, point);
 
-export const resizeShapesFromHandle = (
-    shapes: Shape[],
-    handle: ResizeHandle,
+const resizeLineOrArrow = (
+    shape: Shape,
+    handle: "from" | "to",
+    point: Point
+): Array<{ id: number; from: Point; to: Point }> => [
+    {
+        id: shape.id,
+        from: handle === "from" ? { ...point } : { ...shape.from },
+        to: handle === "to" ? { ...point } : { ...shape.to },
+    },
+];
+
+const resizeSingleRotatedShape = (
+    shape: Shape,
+    handle: CornerHandle,
     point: Point
 ): Array<{ id: number; from: Point; to: Point }> => {
-    if (handle === "from" || handle === "to") {
-        const shape = shapes[0];
-        return [
-            {
-                id: shape.id,
-                from: handle === "from" ? { ...point } : { ...shape.from },
-                to: handle === "to" ? { ...point } : { ...shape.to },
-            },
-        ];
-    }
+    const center = getShapeCenter(shape);
+    const localPoint = rotatePoint(point, center, -shape.rotation);
+    return [
+        {
+            id: shape.id,
+            ...resizePoints(shape.from, shape.to, handle, localPoint),
+        },
+    ];
+};
 
-    if (shapes.length === 1 && shapes[0].rotation !== 0) {
-        const shape = shapes[0];
-        const center = getShapeCenter(shape);
-        const localPoint = rotatePoint(point, center, -shape.rotation);
-        return [
-            {
-                id: shape.id,
-                ...resizePoints(shape.from, shape.to, handle, localPoint),
-            },
-        ];
-    }
-
+const scaleShapesGroup = (
+    shapes: Shape[],
+    handle: CornerHandle,
+    point: Point
+): Array<{ id: number; from: Point; to: Point }> => {
     const originalBox = getBoundingBoxForShapes(shapes);
     const originalBounds = getBoundingBoxBounds(originalBox);
     const newBox = resizeShapeFromHandle(
@@ -368,6 +372,26 @@ export const resizeShapesFromHandle = (
             y: anchor.y + (shape.to.y - anchor.y) * sy,
         },
     }));
+};
+
+export const resizeShapesFromHandle = (
+    shapes: Shape[],
+    handle: ResizeHandle,
+    point: Point
+): Array<{ id: number; from: Point; to: Point }> => {
+    if (handle === "from" || handle === "to") {
+        return resizeLineOrArrow(shapes[0], handle, point);
+    }
+
+    if (shapes.length === 1 && shapes[0].rotation !== 0) {
+        return resizeSingleRotatedShape(
+            shapes[0],
+            handle as CornerHandle,
+            point
+        );
+    }
+
+    return scaleShapesGroup(shapes, handle as CornerHandle, point);
 };
 
 export const ROTATE_HANDLE_PADDING = 50;
