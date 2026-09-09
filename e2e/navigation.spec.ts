@@ -5,7 +5,7 @@ test.describe("Navigation", () => {
         await page.goto("/");
 
         // Pan
-        await page.locator("button[title='Pan']").click();
+        await page.locator("button[title^='Pan']").click();
         const canvas = page.locator("canvas#whiteboard");
 
         await page.mouse.move(400, 100);

@@ -24,20 +24,20 @@ describe("App", () => {
         render(<App />);
 
         expect(document.getElementById("whiteboard")).toBeInTheDocument();
-        expect(screen.getByTitle("Rectangle")).toBeInTheDocument();
-        expect(screen.getByTitle("Select")).toBeInTheDocument();
+        expect(screen.getByTitle(/Rectangle/)).toBeInTheDocument();
+        expect(screen.getByTitle(/Select/)).toBeInTheDocument();
     });
 
     test("highlights the active tool button", () => {
         render(<App />);
 
-        expect(screen.getByTitle("Select")).toHaveClass("bg-gray-200");
+        expect(screen.getByTitle(/Select/)).toHaveClass("bg-gray-200");
     });
 
     test("updates the active tool when clicking a tool button", () => {
         render(<App />);
 
-        fireEvent.click(screen.getByTitle("Arrow"));
+        fireEvent.click(screen.getByTitle(/Arrow/));
 
         expect(useTool.getState().tool).toEqual(Tools.arrow);
     });
@@ -45,7 +45,7 @@ describe("App", () => {
     test("clears the selection when switching tools", () => {
         render(<App />);
 
-        fireEvent.click(screen.getByTitle("Arrow"));
+        fireEvent.click(screen.getByTitle(/Arrow/));
 
         expect(useCanvasStore.getState().selectedIds).toEqual([]);
     });

@@ -18,11 +18,31 @@ export const HANDLES_CURSORS: Record<Handles, string> = {
 };
 
 export const TOOLS_CONFIG = [
-    { tool: Tools.pan, icon: PanIcon, tooltip: "Pan" },
-    { tool: Tools.select, icon: CursorIcon, tooltip: "Select" },
-    { tool: Tools.rect, icon: RectangleIcon, tooltip: "Rectangle" },
-    { tool: Tools.dia, icon: DiamondIcon, tooltip: "Diamond" },
-    { tool: Tools.ellipse, icon: EllipseIcon, tooltip: "Ellipse" },
-    { tool: Tools.arrow, icon: ArrowIcon, tooltip: "Arrow" },
-    { tool: Tools.line, icon: LineIcon, tooltip: "Line" },
+    { tool: Tools.pan, icon: PanIcon, tooltip: "Pan", shortcut: "h" },
+    {
+        tool: Tools.select,
+        icon: CursorIcon,
+        tooltip: "Select",
+        shortcut: "1, v",
+    },
+    {
+        tool: Tools.rect,
+        icon: RectangleIcon,
+        tooltip: "Rectangle",
+        shortcut: "2, r",
+    },
+    {
+        tool: Tools.dia,
+        icon: DiamondIcon,
+        tooltip: "Diamond",
+        shortcut: "3, d",
+    },
+    {
+        tool: Tools.ellipse,
+        icon: EllipseIcon,
+        tooltip: "Ellipse",
+        shortcut: "4, o",
+    },
+    { tool: Tools.arrow, icon: ArrowIcon, tooltip: "Arrow", shortcut: "5, a" },
+    { tool: Tools.line, icon: LineIcon, tooltip: "Line", shortcut: "6, l" },
 ] as const;

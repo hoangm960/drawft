@@ -31,13 +31,13 @@ describe("ToolBar", () => {
     test.each(TOOLTIPS)("renders a button for the %s tool", tooltip => {
         render(<ToolBar />);
 
-        expect(screen.getByTitle(tooltip)).toBeInTheDocument();
+        expect(screen.getByTitle(new RegExp(tooltip))).toBeInTheDocument();
     });
 
     test("clicking a tool updates the active tool", () => {
         render(<ToolBar />);
 
-        fireEvent.click(screen.getByTitle("Rectangle"));
+        fireEvent.click(screen.getByTitle(/Rectangle/));
 
         expect(useTool.getState().tool).toEqual(Tools.rect);
     });
@@ -46,21 +46,21 @@ describe("ToolBar", () => {
         useTool.getState().setTool(Tools.pan);
         render(<ToolBar />);
 
-        expect(screen.getByTitle("Pan")).toHaveClass("bg-gray-200");
+        expect(screen.getByTitle(/Pan/)).toHaveClass("bg-gray-200");
     });
 
     test("does not apply the active class to the other tool buttons", () => {
         useTool.getState().setTool(Tools.pan);
         render(<ToolBar />);
 
-        expect(screen.getByTitle("Select")).toHaveClass("bg-transparent");
+        expect(screen.getByTitle(/Select/)).toHaveClass("bg-transparent");
     });
 
     test.each(TOOLTIPS)("disables the %s button while dragging", tooltip => {
         useCanvasStore.getState().setIsDragging(true);
         render(<ToolBar />);
 
-        expect(screen.getByTitle(tooltip)).toHaveClass(
+        expect(screen.getByTitle(new RegExp(tooltip))).toHaveClass(
             "opacity-50",
             "pointer-events-none"
         );
@@ -70,7 +70,7 @@ describe("ToolBar", () => {
         useCanvasStore.getState().setIsBoxSelecting(true);
         render(<ToolBar />);
 
-        fireEvent.click(screen.getByTitle("Pan"));
+        fireEvent.click(screen.getByTitle(/Pan/));
 
         expect(useTool.getState().tool).toEqual(Tools.select);
     });
@@ -79,6 +79,6 @@ describe("ToolBar", () => {
         useCanvasStore.getState().setIsPanning(true);
         render(<ToolBar />);
 
-        expect(screen.getByTitle("Rectangle")).toHaveClass("opacity-50");
+        expect(screen.getByTitle(/Rectangle/)).toHaveClass("opacity-50");
     });
 });

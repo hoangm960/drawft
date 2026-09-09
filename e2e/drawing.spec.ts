@@ -5,7 +5,7 @@ test.describe("Drawing", () => {
         await page.goto("/");
 
         // Select Rect tool
-        await page.locator("button[title='Rectangle']").click();
+        await page.locator("button[title^='Rectangle']").click();
 
         const canvas = page.locator("canvas#whiteboard");
 

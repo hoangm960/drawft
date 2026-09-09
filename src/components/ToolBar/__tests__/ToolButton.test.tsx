@@ -21,7 +21,7 @@ describe("ToolButton", () => {
     test("applies the tooltip as the title attribute", () => {
         render(<ToolButton icon={icon} onClick={onClick} tooltip={tooltip} />);
 
-        expect(screen.getByTitle(tooltip)).toBeInTheDocument();
+        expect(screen.getByTitle(new RegExp(tooltip))).toBeInTheDocument();
     });
 
     test("uses an empty title when no tooltip is provided", () => {
@@ -35,7 +35,7 @@ describe("ToolButton", () => {
     test("calls onClick when clicked", () => {
         render(<ToolButton icon={icon} onClick={onClick} tooltip={tooltip} />);
 
-        fireEvent.click(screen.getByTitle(tooltip));
+        fireEvent.click(screen.getByTitle(new RegExp(tooltip)));
 
         expect(onClick).toHaveBeenCalledTimes(1);
     });
@@ -50,7 +50,7 @@ describe("ToolButton", () => {
             />
         );
 
-        fireEvent.click(screen.getByTitle(tooltip));
+        fireEvent.click(screen.getByTitle(new RegExp(tooltip)));
 
         expect(onClick).not.toHaveBeenCalled();
     });
@@ -65,12 +65,16 @@ describe("ToolButton", () => {
             />
         );
 
-        expect(screen.getByTitle(tooltip)).toHaveClass("bg-gray-200");
+        expect(screen.getByTitle(new RegExp(tooltip))).toHaveClass(
+            "bg-gray-200"
+        );
     });
 
     test("applies inactive styling when not active", () => {
         render(<ToolButton icon={icon} onClick={onClick} tooltip={tooltip} />);
 
-        expect(screen.getByTitle(tooltip)).toHaveClass("bg-transparent");
+        expect(screen.getByTitle(new RegExp(tooltip))).toHaveClass(
+            "bg-transparent"
+        );
     });
 });

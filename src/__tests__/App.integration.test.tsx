@@ -97,7 +97,7 @@ describe("App Integration", () => {
             useTool.getState().setTool(Tools.rect);
         });
 
-        const rectBtn = screen.getByTitle("Rectangle");
+        const rectBtn = screen.getByTitle(/Rectangle/);
 
         fireEvent.mouseDown(canvas(), { clientX: 100, clientY: 100 });
         fireEvent.mouseMove(canvas(), { clientX: 150, clientY: 150 });

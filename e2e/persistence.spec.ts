@@ -5,7 +5,7 @@ test.describe("Persistence", () => {
         await page.goto("/");
 
         // Draw shape
-        await page.locator("button[title='Rectangle']").click();
+        await page.locator("button[title^='Rectangle']").click();
         const canvas = page.locator("canvas#whiteboard");
         await canvas.dragTo(canvas, {
             sourcePosition: { x: 400, y: 100 },

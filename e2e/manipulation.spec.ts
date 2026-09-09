@@ -4,7 +4,7 @@ test.describe("Manipulation", () => {
     test("moves and resizes a shape", async ({ page }) => {
         await page.goto("/");
 
-        await page.locator("button[title='Rectangle']").click();
+        await page.locator("button[title^='Rectangle']").click();
         const canvas = page.locator("canvas#whiteboard");
         await canvas.dragTo(canvas, {
             sourcePosition: { x: 400, y: 100 },
@@ -12,7 +12,7 @@ test.describe("Manipulation", () => {
         });
 
         // Switch to select tool
-        await page.locator("button[title='Select']").click();
+        await page.locator("button[title^='Select']").click();
 
         // Select the shape (click in middle)
         await page.mouse.click(450, 150);

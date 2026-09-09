@@ -32,6 +32,26 @@ export function useCanvasShortcuts(
                 }
             }
 
+            if (!e.ctrlKey && !e.metaKey && !e.altKey && !e.shiftKey) {
+                const key = e.key.toLowerCase();
+                const toolStore = useTool.getState();
+                if (key === "1" || key === "v") {
+                    toolStore.setTool(Tools.select);
+                } else if (key === "h") {
+                    toolStore.setTool(Tools.pan);
+                } else if (key === "2" || key === "r") {
+                    toolStore.setTool(Tools.rect);
+                } else if (key === "3" || key === "d") {
+                    toolStore.setTool(Tools.dia);
+                } else if (key === "4" || key === "o") {
+                    toolStore.setTool(Tools.ellipse);
+                } else if (key === "5" || key === "a") {
+                    toolStore.setTool(Tools.arrow);
+                } else if (key === "6" || key === "l") {
+                    toolStore.setTool(Tools.line);
+                }
+            }
+
             if (e.ctrlKey || e.metaKey) {
                 const key = e.key.toLowerCase();
                 if (key === "z") {

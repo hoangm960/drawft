@@ -9,7 +9,7 @@ test.describe("App Boot & UI", () => {
         await expect(canvas).toBeVisible();
 
         // Check Toolbar (has buttons)
-        const toolbar = page.locator("button[title='Rectangle']");
+        const toolbar = page.locator("button[title^='Rectangle']");
         await expect(toolbar).toBeVisible();
 
         // Check Sidebar
@@ -26,7 +26,7 @@ test.describe("App Boot & UI", () => {
     }) => {
         await page.goto("/");
 
-        const selectBtn = page.locator("button[title='Select']");
+        const selectBtn = page.locator("button[title^='Select']");
         await expect(selectBtn).toHaveClass(/bg-gray-200|bg-gray-500/); // active class
 
         const canvas = page.locator("canvas#whiteboard");

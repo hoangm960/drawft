@@ -12,12 +12,13 @@ export default function ToolBar() {
         <div className="absolute bottom-0 w-full h-fit pb-4 flex items-center justify-center pointer-events-none">
             <div
                 className={`bg-white/80 dark:bg-gray-600/30 h-20 w-fit flex flex-row gap-2 px-8 py-4 rounded-2xl pointer-events-auto shadow-sm dark:shadow-none ${isDisabled ? "pointer-events-none" : ""}`}>
-                {TOOLS_CONFIG.map(({ tool: t, icon, tooltip }) => (
+                {TOOLS_CONFIG.map(({ tool: t, icon, tooltip, shortcut }) => (
                     <ToolButton
                         key={t}
                         icon={icon}
                         onClick={() => setTool(t)}
                         tooltip={tooltip}
+                        shortcut={shortcut}
                         isActive={tool === t}
                         disabled={isDisabled}
                     />
