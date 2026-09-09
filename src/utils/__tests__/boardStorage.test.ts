@@ -7,10 +7,17 @@ import {
     saveBoard,
     serializeBoard,
 } from "../boardStorage";
+import { safeStorage } from "../safeStorage";
 
 describe("boardStorage", () => {
     beforeEach(() => {
         localStorage.clear();
+        safeStorage._reset();
+        jest.spyOn(console, 'warn').mockImplementation(() => {});
+    });
+
+    afterEach(() => {
+        jest.restoreAllMocks();
     });
 
     test("serializeBoard includes version, shapes, offset and scale", () => {

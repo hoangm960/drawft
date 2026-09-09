@@ -7,6 +7,8 @@ import {
     MAX_SCALE,
 } from "@/constants";
 
+import { safeStorage } from "./safeStorage";
+
 export interface PersistedBoard {
     version: number;
     shapes: Shape[];
@@ -60,15 +62,6 @@ const isShape = (value: unknown): value is Shape => {
 export const clampScale = (scale: number): number =>
     Math.min(Math.max(scale, MIN_SCALE), MAX_SCALE);
 
-const getStorage = (): Storage | null => {
-    try {
-        if (typeof localStorage === "undefined") return null;
-        return localStorage;
-    } catch {
-        return null;
-    }
-};
-
 export const serializeBoard = (
     shapes: Map<number, Shape>,
     offset: Point,
@@ -88,28 +81,14 @@ export const saveBoard = (
     offset: Point,
     scale: number
 ): boolean => {
-    const storage = getStorage();
-    if (!storage) return false;
-    try {
-        storage.setItem(
-            BOARD_STORAGE_KEY,
-            serializeBoard(shapes, offset, scale)
-        );
-        return true;
-    } catch {
-        return false;
-    }
+    return safeStorage.setItem(
+        BOARD_STORAGE_KEY,
+        serializeBoard(shapes, offset, scale)
+    );
 };
 
 export const loadBoard = (): PersistedBoard | null => {
-    const storage = getStorage();
-    if (!storage) return null;
-    let raw: string | null;
-    try {
-        raw = storage.getItem(BOARD_STORAGE_KEY);
-    } catch {
-        return null;
-    }
+    const raw = safeStorage.getItem(BOARD_STORAGE_KEY);
     if (!raw) return null;
     let parsed: unknown;
     try {
@@ -132,11 +111,5 @@ export const loadBoard = (): PersistedBoard | null => {
 };
 
 export const clearBoard = (): void => {
-    const storage = getStorage();
-    if (!storage) return;
-    try {
-        storage.removeItem(BOARD_STORAGE_KEY);
-    } catch {
-        // Ignore unavailable storage.
-    }
+    safeStorage.removeItem(BOARD_STORAGE_KEY);
 };

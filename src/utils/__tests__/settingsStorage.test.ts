@@ -4,10 +4,17 @@ import {
     loadSettings,
     getDefaultSettings,
 } from "../settingsStorage";
+import { safeStorage } from "../safeStorage";
 
 describe("settingsStorage", () => {
     beforeEach(() => {
         localStorage.clear();
+        safeStorage._reset();
+        jest.spyOn(console, 'warn').mockImplementation(() => {});
+    });
+
+    afterEach(() => {
+        jest.restoreAllMocks();
     });
 
     test("should save and load settings", () => {

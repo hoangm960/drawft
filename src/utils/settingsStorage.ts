@@ -1,4 +1,5 @@
 import type { StrokePattern } from "@/types";
+import { safeStorage } from "./safeStorage";
 import {
     DEFAULT_CORNER_RADIUS,
     DEFAULT_OPACITY,
@@ -46,39 +47,16 @@ const isThemeMode = (value: unknown): value is ThemeMode =>
 export const clampAutosaveInterval = (interval: number): number =>
     Math.min(Math.max(interval, MIN_AUTOSAVE_INTERVAL), MAX_AUTOSAVE_INTERVAL);
 
-const getStorage = (): Storage | null => {
-    try {
-        if (typeof localStorage === "undefined") return null;
-        return localStorage;
-    } catch {
-        return null;
-    }
-};
-
 export const saveSettings = (settings: Omit<PersistedSettings, "version">) => {
-    const storage = getStorage();
-    if (!storage) return false;
-    try {
-        const data: PersistedSettings = {
-            ...settings,
-            version: SETTINGS_STORAGE_VERSION,
-        };
-        storage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify(data));
-        return true;
-    } catch {
-        return false;
-    }
+    const data: PersistedSettings = {
+        ...settings,
+        version: SETTINGS_STORAGE_VERSION,
+    };
+    return safeStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify(data));
 };
 
 export const loadSettings = (): PersistedSettings => {
-    const storage = getStorage();
-    if (!storage) return getDefaultSettings();
-    let raw: string | null = null;
-    try {
-        raw = storage.getItem(SETTINGS_STORAGE_KEY);
-    } catch {
-        // ignore
-    }
+    const raw = safeStorage.getItem(SETTINGS_STORAGE_KEY);
     if (!raw) return getDefaultSettings();
 
     try {
